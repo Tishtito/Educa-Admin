@@ -198,9 +198,6 @@ const levelSubjectSchema = z
     if (v.subject_mode === 'new' && !/^[A-Za-z0-9_-]+$/.test(v.new_code)) {
       ctx.addIssue({ code: 'custom', path: ['new_code'], message: 'A short code, e.g. ENG' })
     }
-    if (v.aggregation_rule === 'single' && v.papers.length !== 1) {
-      ctx.addIssue({ code: 'custom', path: ['aggregation_rule'], message: 'A single-paper subject has exactly one paper' })
-    }
     if (v.aggregation_rule !== 'single' && v.papers.length < 2) {
       ctx.addIssue({ code: 'custom', path: ['papers'], message: 'Combining papers needs at least two' })
     }
@@ -260,7 +257,6 @@ function LevelSubjectDialog({
   function setRule(next: AggregationRule) {
     form.setValue('aggregation_rule', next, { shouldValidate: form.formState.isSubmitted })
     // Keep the paper count consistent with the rule the admin picked.
-    if (next === 'single' && papers.fields.length > 1) papers.replace([form.getValues('papers.0')])
     if (next !== 'single' && papers.fields.length < 2) papers.append({ name: 'Paper 2', default_max_marks: '100', weight: '1' })
   }
 
@@ -325,8 +321,9 @@ function LevelSubjectDialog({
         <Alert>
           <LockIcon />
           <AlertDescription>
-            This subject has been examined, so its papers and how they combine are fixed. You can still rename papers, change their default
-            marks-out-of, grading, order and whether it is active.
+            This subject has been examined, so its existing papers and how they combine are fixed. You can still <strong>add</strong> a paper —
+            each exam chooses which papers it sets — and rename papers, change their default marks-out-of, grading, order and whether the
+            subject is active.
           </AlertDescription>
         </Alert>
       )}
@@ -406,7 +403,9 @@ function LevelSubjectDialog({
               variant="ghost"
               size="icon"
               aria-label={`Remove paper ${index + 1}`}
-              disabled={frozen || papers.fields.length <= 1}
+              // Examined subjects keep the papers they had; only papers added
+              // in this dialog can still be taken back out.
+              disabled={papers.fields.length <= 1 || (frozen && index < (levelSubject?.papers.length ?? 0))}
               onClick={() => papers.remove(index)}
             >
               <XIcon />
@@ -414,7 +413,7 @@ function LevelSubjectDialog({
           </div>
         ))}
         {errors.papers?.message && <p className="text-xs text-destructive">{errors.papers.message}</p>}
-        {!frozen && rule !== 'single' && papers.fields.length < 10 && (
+        {papers.fields.length < 10 && (
           <Button
             type="button"
             variant="outline"

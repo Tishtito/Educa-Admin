@@ -229,6 +229,12 @@ export function useExamSetup(examId: number) {
   })
 }
 
+/** A subject this exam examines, and which of its papers it sets. */
+export interface ExamSubjectChoice {
+  level_subject_id: number
+  papers: { subject_paper_id: number; max_marks?: number | null }[]
+}
+
 export function useExamSetupMutations(examId: number) {
   const queryClient = useQueryClient()
   const refresh = () => {
@@ -244,7 +250,7 @@ export function useExamSetupMutations(examId: number) {
       onSuccess: refresh,
     }),
     chooseSubjects: useMutation({
-      mutationFn: (levelSubjectIds: number[]) => api.put<ExamSetup>(`/exams/${examId}/subjects`, { level_subject_ids: levelSubjectIds }),
+      mutationFn: (subjects: ExamSubjectChoice[]) => api.put<ExamSetup>(`/exams/${examId}/subjects`, { subjects }),
       meta: silent,
       onSuccess: (data) => {
         queryClient.setQueryData(setupKeys.examSetup(examId), data)

@@ -475,8 +475,21 @@ export interface ExamSetup {
     code: string
     is_active: boolean
     selected: boolean
-    papers: { subject_paper_id: number; name: string; default_max_marks: number | null; max_marks: number | null }[]
+    /** How this subject's papers combine. 'single' means an exam sets exactly one of them. */
+    aggregation_rule: AggregationRule
+    aggregation_rule_label: string
+    papers: ExamSetupPaper[]
   }[]
+}
+
+export interface ExamSetupPaper {
+  subject_paper_id: number
+  name: string
+  sequence: number
+  /** Whether this exam sets the paper. Papers are chosen per exam, not per subject. */
+  selected: boolean
+  default_max_marks: number | null
+  max_marks: number | null
 }
 
 // ---------------------------------------------------------------- people
