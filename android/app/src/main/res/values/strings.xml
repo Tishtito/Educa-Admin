@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Educa Admin</string>
+    <string name="title_activity_main">Educa Admin</string>
+    <string name="package_name">ke.codepass.educa.admin</string>
+    <string name="custom_url_scheme">ke.codepass.educa.admin</string>
+</resources>
