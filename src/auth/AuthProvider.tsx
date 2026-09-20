@@ -4,7 +4,7 @@ import { api } from '@/lib/api/client'
 import { ApiError } from '@/lib/api/errors'
 import { session, type ActingSchool } from '@/lib/api/session'
 import type { LoginResponse, User } from '@/lib/api/types'
-import { ADMIN_ROLES, AuthContext, DEVICE_NAME, NotAnAdminError, type AuthContextValue, type AuthStatus, type LoginInput } from './context'
+import { AuthContext, deviceFields, NotAnAdminError, type AuthContextValue, type AuthStatus, type LoginInput } from './context'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
@@ -23,7 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadMe = useCallback(async () => {
     try {
       const me = await api.get<User>('/auth/me', { raw: true })
-      if (!me.roles.some((role) => ADMIN_ROLES.includes(role))) {
+      if (!me.permissions.includes('access_admin_app')) {
         await becomeGuest()
         return
       }
@@ -63,16 +63,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const offPassword = session.on('password-change-required', () =>
       setUser((current) => (current ? { ...current, must_change_password: true } : current)),
     )
+    const offSubscription = session.on('subscription-required', () => void loadMe())
     return () => {
       offUnauthorized()
       offPassword()
+      offSubscription()
     }
-  }, [becomeGuest])
+  }, [becomeGuest, loadMe])
 
   /** Adopts a token the API has just issued (sign-in, invitation, password reset). */
   const signInWithToken = useCallback<AuthContextValue['signInWithToken']>(
     async (result) => {
-      if (!result.user.roles.some((role) => ADMIN_ROLES.includes(role))) {
+      if (!result.user.permissions.includes('access_admin_app')) {
         // Revoke the token we were just given rather than leave it live.
         await session.setToken(result.token)
         await api.post('/auth/logout', undefined, { raw: true }).catch(() => undefined)
@@ -93,15 +95,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async ({ identity, password }: LoginInput) => {
-      const result = await api.post<LoginResponse>('/auth/login', { identity, password, device_name: DEVICE_NAME }, { raw: true })
+      const result = await api.post<LoginResponse>('/auth/login', { identity, password, ...deviceFields() }, { raw: true })
+      return signInWithToken(result)
+    },
+    [signInWithToken],
+  )
+
+  const loginWithGoogle = useCallback(
+    async (idToken: string) => {
+      const result = await api.post<LoginResponse>('/auth/google', { id_token: idToken, ...deviceFields() }, { raw: true })
       return signInWithToken(result)
     },
     [signInWithToken],
   )
 
   const logout = useCallback(async () => {
-    // Tokens never expire server-side, so always revoke — but never let a
-    // failed revoke keep the user signed in on this device.
+    // Revoke the session on the server — but never let a failed revoke keep
+    // the user signed in on this device.
     await api.post('/auth/logout', undefined, { raw: true }).catch(() => undefined)
     await becomeGuest()
   }, [becomeGuest])
@@ -136,15 +146,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           : null,
       isPlatformAdmin,
       mustChangePassword: user?.must_change_password ?? false,
-      hasRole: (...roles) => !!user && (user.roles.includes('super_admin') || roles.some((r) => user.roles.includes(r))),
+      can: (...permissions) => !!user && permissions.some((p) => user.permissions.includes(p)),
       login,
+      loginWithGoogle,
       signInWithToken,
       logout,
       refresh: loadMe,
       changePassword,
       actAsSchool,
     }
-  }, [status, user, actingSchool, login, signInWithToken, logout, loadMe, changePassword, actAsSchool])
+  }, [status, user, actingSchool, login, loginWithGoogle, signInWithToken, logout, loadMe, changePassword, actAsSchool])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

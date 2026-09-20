@@ -16,7 +16,7 @@ interface SessionState {
   actingSchool: ActingSchool | null
 }
 
-type SessionEvent = 'unauthorized' | 'password-change-required'
+type SessionEvent = 'unauthorized' | 'password-change-required' | 'subscription-required'
 
 let state: SessionState = { token: null, actingSchool: null }
 const eventListeners = new Map<SessionEvent, Set<() => void>>()

@@ -29,6 +29,11 @@ const config: CapacitorConfig = {
     contentInset: 'never',
   },
   plugins: {
+    // Continue with Google only: the other providers' SDKs stay out of the apps.
+    SocialLogin: {
+      providers: { google: true, facebook: false, apple: false, twitter: false },
+      logLevel: 1,
+    },
     SystemBars: {
       // The app pads itself with env(safe-area-inset-*) (index.html sets viewport-fit=cover).
       insetsHandling: 'native',

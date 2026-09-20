@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { ArrowDownIcon, ArrowUpIcon, LockIcon, PencilIcon, PlusIcon, Trash2Icon, XIcon } from 'lucide-react'
+import { ArrowDownIcon, ArrowUpIcon, ListPlusIcon, LockIcon, PencilIcon, PlusIcon, Trash2Icon, XIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/data/ConfirmDialog'
 import { Field } from '@/components/data/Field'
@@ -40,6 +40,8 @@ export function SubjectsPage() {
   const levelId = Number(params.get('level')) || firstTaught?.id || levels.data?.[0]?.id
   const level = levels.data?.find((l) => l.id === levelId)
   const [editing, setEditing] = useState<LevelSubject | 'new' | null>(null)
+  const [addingDefaults, setAddingDefaults] = useState(false)
+  const { applyDefaults } = useCurriculumMutations()
 
   return (
     <>
@@ -47,9 +49,14 @@ export function SubjectsPage() {
         title="Subjects"
         description="What each level teaches, how each subject's papers combine into one score, and its order on mark lists and report cards."
         actions={
-          <Button onClick={() => setEditing('new')} disabled={!level}>
-            <PlusIcon /> Add subject{level ? ` to ${level.name}` : ''}
-          </Button>
+          <>
+            <Button variant="outline" onClick={() => setAddingDefaults(true)}>
+              <ListPlusIcon /> Add default subjects
+            </Button>
+            <Button onClick={() => setEditing('new')} disabled={!level}>
+              <PlusIcon /> Add subject{level ? ` to ${level.name}` : ''}
+            </Button>
+          </>
         }
       />
 
@@ -73,7 +80,16 @@ export function SubjectsPage() {
               <EmptyState
                 title={`No subjects at ${level?.name ?? 'this level'} yet`}
                 description="Add the subjects this level teaches. Exams at this level examine every active subject unless you choose otherwise."
-                action={<Button onClick={() => setEditing('new')}>Add subject</Button>}
+                action={
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <Button onClick={() => setAddingDefaults(true)}>
+                      <ListPlusIcon /> Add default subjects
+                    </Button>
+                    <Button variant="outline" onClick={() => setEditing('new')}>
+                      Add a subject
+                    </Button>
+                  </div>
+                }
               />
             ) : (
               <LevelSubjectList rows={rows} scales={scales.data ?? []} onEdit={setEditing} />
@@ -82,6 +98,34 @@ export function SubjectsPage() {
         </QueryState>
         <CatalogueCard subjects={subjects.data ?? []} />
       </div>
+
+      <ConfirmDialog
+        open={addingDefaults}
+        onOpenChange={setAddingDefaults}
+        title="Add the default subjects?"
+        description={
+          <span className="grid gap-2">
+            <span>Adds the standard CBC subjects for each level that this school does not offer yet:</span>
+            <span className="text-xs">
+              <strong>Lower primary</strong> — Mathematics, English (Reading + Grammar), Kiswahili (Kusoma + Lugha), Environmental Activities,
+              Creative Arts, CRE.
+              <br />
+              <strong>Upper primary</strong> — Mathematics, English, Kiswahili, Science and Technology, Social Studies, Agriculture and
+              Nutrition, Creative Arts, CRE.
+              <br />
+              <strong>Junior secondary</strong> — English and Kiswahili (Paper 1 + Paper 2), Mathematics, Creative Arts, Pre-Technical Studies,
+              Agriculture, Social Studies, Integrated Science, CRE.
+            </span>
+            <span>Subjects already set up are not changed. You can rename or edit any of them afterwards.</span>
+          </span>
+        }
+        confirmLabel="Add default subjects"
+        onConfirm={async () => {
+          const result = await applyDefaults.mutateAsync()
+          const added = result.data.level_subjects_added
+          toast.success(added === 0 ? 'Every default subject is already set up.' : `Added ${added} subject${added === 1 ? '' : 's'} across the levels.`)
+        }}
+      />
 
       {editing && level && (
         <LevelSubjectDialog

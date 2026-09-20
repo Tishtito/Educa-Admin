@@ -2,6 +2,8 @@ import { useEffect, useRef } from 'react'
 import { Link, NavLink, Outlet, useParams } from 'react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { ChevronLeftIcon } from 'lucide-react'
+import { useAuth } from '@/auth/useAuth'
+import type { Permission } from '@/lib/permissions'
 import { cn } from '@/lib/utils'
 import { ErrorPanel } from '@/components/data/QueryState'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -10,19 +12,22 @@ import { ExamStatusBadge } from '../components/ExamStatusBadge'
 import { ResultsFreshness } from '../components/ResultsFreshness'
 import type { ExamOutletContext } from '../useExamContext'
 
-const tabs = [
-  { to: '', label: 'Overview', end: true },
-  { to: 'marking', label: 'Marking', end: false },
-  { to: 'marklist', label: 'Mark list', end: false },
-  { to: 'analysis', label: 'Analysis', end: false },
-  { to: 'report-cards', label: 'Report cards', end: false },
-  { to: 'setup', label: 'Set-up', end: false },
+/** Each tab shows for anyone holding one of its permissions; none = everyone. */
+const examTabs: { to: string; label: string; end: boolean; permissions: Permission[] }[] = [
+  { to: '', label: 'Overview', end: true, permissions: [] },
+  { to: 'marking', label: 'Marking', end: false, permissions: ['view_marksheets'] },
+  { to: 'marklist', label: 'Mark list', end: false, permissions: ['view_marklists'] },
+  { to: 'analysis', label: 'Analysis', end: false, permissions: ['view_exam_analysis'] },
+  { to: 'report-cards', label: 'Report cards', end: false, permissions: ['view_report_cards', 'edit_report_entries'] },
+  { to: 'setup', label: 'Set-up', end: false, permissions: ['update_exams', 'delete_exams'] },
 ]
 
 export function ExamLayout() {
   const examId = Number(useParams().examId)
   const exam = useExam(examId)
   const queryClient = useQueryClient()
+  const { can } = useAuth()
+  const tabs = examTabs.filter((tab) => tab.permissions.length === 0 || can(...tab.permissions))
 
   // When the background recompute finishes, everything derived from the old
   // results (mark lists, cards, sheet scores) is out of date.

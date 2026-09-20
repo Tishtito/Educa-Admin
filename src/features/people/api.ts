@@ -59,6 +59,7 @@ export function useStaffMutations() {
       mutationFn: (id: number) => api.post<{ temporary_password: string; username: string }>(`/staff/${id}/reset-password`),
       onSuccess: refresh,
     }),
+    signOutEverywhere: useMutation({ mutationFn: (id: number) => api.post(`/staff/${id}/sign-out`), onSuccess: refresh }),
     remove: useMutation({ mutationFn: (id: number) => api.delete(`/staff/${id}`), onSuccess: refresh }),
     sendInvitation: useMutation({ mutationFn: (id: number) => api.post<StaffMember>(`/staff/${id}/invitation`), onSuccess: refresh }),
     cancelInvitation: useMutation({ mutationFn: (id: number) => api.delete<StaffMember>(`/staff/${id}/invitation`), onSuccess: refresh }),

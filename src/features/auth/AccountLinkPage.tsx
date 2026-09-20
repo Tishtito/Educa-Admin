@@ -12,8 +12,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ApiError, errorMessage } from '@/lib/api/errors'
 import { formatDateTime } from '@/lib/format'
+import { googleAvailable } from '@/lib/google'
 import { AuthLayout } from './AuthLayout'
-import { completeAccountLink, linkUnavailableReason, useAccountLink, type AccountLinkDetails, type AccountLinkKind } from './api'
+import { acceptInvitationWithGoogle, completeAccountLink, linkUnavailableReason, useAccountLink, type AccountLinkDetails, type AccountLinkKind } from './api'
+import { GoogleButton, OrDivider } from './GoogleButton'
 import { PasswordFields } from './PasswordFields'
 
 const schema = z
@@ -105,6 +107,24 @@ function ChoosePassword({ kind, token, details }: { kind: AccountLinkKind; token
     }
   }
 
+  async function withGoogle(idToken: string) {
+    setFormError(null)
+    try {
+      await signInWithToken(await acceptInvitationWithGoogle(token, idToken))
+      navigate('/', { replace: true })
+    } catch (error) {
+      if (linkUnavailableReason(error)) {
+        setGone(error)
+      } else if (error instanceof ApiError && error.isValidation) {
+        setFormError(error.field('id_token') ?? error.message)
+      } else if (error instanceof NotAnAdminError) {
+        setFormError(`Your account is set up, but ${error.message.charAt(0).toLowerCase()}${error.message.slice(1)}`)
+      } else {
+        setFormError(errorMessage(error))
+      }
+    }
+  }
+
   if (gone) return <Unavailable kind={kind} error={gone} />
 
   const invitation = kind === 'invitation'
@@ -146,6 +166,13 @@ function ChoosePassword({ kind, token, details }: { kind: AccountLinkKind; token
               <Alert variant="destructive">
                 <AlertDescription>{formError}</AlertDescription>
               </Alert>
+            )}
+            {invitation && googleAvailable() && details.email && (
+              <>
+                <GoogleButton disabled={isSubmitting} onIdToken={withGoogle} onError={setFormError} />
+                <p className="-mt-2 text-center text-xs text-muted-foreground">With the Google account for {details.email}.</p>
+                <OrDivider />
+              </>
             )}
             <PasswordFields form={form} />
             <Button type="submit" size="lg" disabled={isSubmitting}>

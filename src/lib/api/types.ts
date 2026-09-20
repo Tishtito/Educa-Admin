@@ -1,9 +1,13 @@
+import type { Permission } from '@/lib/permissions'
+
 /**
  * TypeScript mirrors of the Educa_Lara JSON responses. The Laravel resources
  * and controllers are the authority; keep these in step with them.
  */
 
-export type RoleSlug = 'super_admin' | 'school_admin' | 'class_teacher' | 'examiner'
+/** The built-in roles. A school's own roles have slugs of their own, hence `string` on users. */
+export type BuiltInRole = 'super_admin' | 'school_admin' | 'class_teacher' | 'examiner'
+export type RoleSlug = BuiltInRole | (string & {})
 
 export interface School {
   uuid: string
@@ -14,6 +18,40 @@ export interface School {
   logo_path: string | null
   timezone: string
   status: 'onboarding' | 'active' | 'suspended'
+  /** Whether exams, marking, mark lists and report cards are open (Educa_Lara docs/billing.md). */
+  subscription?: SubscriptionState
+}
+
+export interface SubscriptionState {
+  /** overdue: the subscription features are locked (the API answers 402). */
+  status: 'trial' | 'active' | 'overdue'
+  /** The last day it is paid for, inclusive. */
+  paid_until: string | null
+  /** Days of use left counting today; 0 once lapsed. */
+  days_left: number
+  is_trial: boolean
+  cycle_months: number | null
+  /** Null until Educa sets the school's price. */
+  price_kes: number | null
+  credit_kes: number
+  /** What renewing costs after credit; null when not priced. */
+  amount_due_kes: number | null
+}
+
+export interface SubscriptionPayment {
+  id: number
+  method: 'stk' | 'paybill' | 'manual'
+  status: 'pending' | 'succeeded' | 'failed' | 'unmatched'
+  amount_kes: number
+  mpesa_receipt: string | null
+  reference: string | null
+  /** Masked, e.g. 2547*****678. */
+  phone: string | null
+  result_desc: string | null
+  paid_at: string | null
+  paid_until_after: string | null
+  cycles_added: number
+  created_at: string
 }
 
 export interface User {
@@ -27,8 +65,13 @@ export interface User {
   is_active: boolean
   must_change_password: boolean
   last_login_at: string | null
+  /** Whether Continue with Google signs in to this account. */
+  google_connected: boolean
   is_platform_admin: boolean
   roles: RoleSlug[]
+  role_names: string[]
+  /** What this person may do in the school (docs/permissions.md). The API enforces it regardless. */
+  permissions: Permission[]
   school: School | null
 }
 
@@ -505,7 +548,13 @@ export interface StaffMember {
   is_active: boolean
   must_change_password: boolean
   last_login_at: string | null
+  /** The last time any of the account's sessions was used. */
+  last_active_at?: string | null
+  google_connected: boolean
   roles: RoleSlug[]
+  role_names: string[]
+  /** What the account may do, used to offer only suitable people for assignments. */
+  permissions: Permission[]
   class_teacher_of: { class_id: number; class_name: string | null }[]
   examiner_assignments_count: number
   /** An emailed set-up link not yet used or cancelled. */
@@ -688,4 +737,26 @@ export interface SchoolProfile {
   email: string | null
   has_logo: boolean
   status: School['status']
+}
+
+// ---------------------------------------------------------------- roles
+
+export interface RoleSummary {
+  id: number
+  slug: RoleSlug
+  name: string
+  description: string | null
+  /** Built into Educa (class teacher, examiner, school administrator) rather than made by the school. */
+  is_system: boolean
+  /** School administrator: always every school permission, not editable. */
+  is_fixed: boolean
+  /** A built-in role this school has changed from the defaults. */
+  is_customised: boolean
+  users_count: number
+  permissions: Permission[]
+}
+
+export interface PermissionGroup {
+  group: string
+  permissions: { slug: Permission; name: string; description: string }[]
 }

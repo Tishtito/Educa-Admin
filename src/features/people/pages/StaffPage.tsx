@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { CheckIcon, CopyIcon, KeyRoundIcon, MailIcon, MailXIcon, MoreHorizontalIcon, PencilIcon, SearchIcon, Trash2Icon, UserPlusIcon, UserXIcon } from 'lucide-react'
+import { CheckIcon, CopyIcon, KeyRoundIcon, LogOutIcon, MailIcon, MailXIcon, MoreHorizontalIcon, PencilIcon, SearchIcon, Trash2Icon, UserPlusIcon, UserXIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/auth/useAuth'
 import { ConfirmDialog } from '@/components/data/ConfirmDialog'
@@ -37,15 +37,29 @@ import type { RoleSlug, StaffMember } from '@/lib/api/types'
 import { formatDate, formatRelative, roleLabel } from '@/lib/format'
 import { showFormError } from '@/lib/forms'
 import { cn } from '@/lib/utils'
+import { useRoles } from '@/features/roles/api'
 import { useStaff, useStaffMutations } from '../api'
 
-const grantable: RoleSlug[] = ['school_admin', 'class_teacher', 'examiner']
+/** Built-in roles, for someone who cannot open the roles list (no view_roles). */
+const BUILT_IN: { slug: RoleSlug; name: string; description: string }[] = [
+  { slug: 'school_admin', name: 'School Administrator', description: 'Everything in this app: set-up, exams, staff and pupils.' },
+  { slug: 'class_teacher', name: 'Class Teacher', description: 'Their class’s pupils, mark list and report card remarks.' },
+  { slug: 'examiner', name: 'Examiner', description: 'Enters marks for the subjects and classes they are given.' },
+]
+
+/** The roles this school can give: built-in ones and its own, from the roles screen's list when allowed. */
+function useAssignableRoles() {
+  const { can } = useAuth()
+  const roles = useRoles(can('view_roles'))
+  return roles.data?.map((r) => ({ slug: r.slug, name: r.name, description: r.description ?? '' })) ?? BUILT_IN
+}
 const ALL = 'all'
 
 export function StaffPage() {
   const staff = useStaff()
   const [search, setSearch] = useState('')
   const [role, setRole] = useState<string>(ALL)
+  const assignable = useAssignableRoles()
   const [editing, setEditing] = useState<StaffMember | 'new' | null>(null)
   const [credentials, setCredentials] = useState<{ name: string; username: string; password: string } | null>(null)
 
@@ -71,9 +85,9 @@ export function StaffPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL}>All roles</SelectItem>
-            {grantable.map((r) => (
-              <SelectItem key={r} value={r}>
-                {roleLabel(r)}
+            {assignable.map((r) => (
+              <SelectItem key={r.slug} value={r.slug}>
+                {r.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -85,7 +99,7 @@ export function StaffPage() {
           const q = search.trim().toLowerCase()
           const rows = data.filter(
             (m) =>
-              (role === ALL || m.roles.includes(role as RoleSlug)) &&
+              (role === ALL || m.roles.includes(role)) &&
               (!q || m.name.toLowerCase().includes(q) || m.username.includes(q) || (m.staff_no ?? '').toLowerCase().includes(q)),
           )
           if (rows.length === 0) return <EmptyState title="No staff found" />
@@ -97,7 +111,7 @@ export function StaffPage() {
                     <TableHead>Name</TableHead>
                     <TableHead>Roles</TableHead>
                     <TableHead>This year</TableHead>
-                    <TableHead>Last sign-in</TableHead>
+                    <TableHead>Last active</TableHead>
                     <TableHead className="w-12" />
                   </TableRow>
                 </TableHeader>
@@ -140,9 +154,9 @@ function StaffRow({
   onEdit: () => void
   onCredentials: (c: { name: string; username: string; password: string }) => void
 }) {
-  const { user } = useAuth()
-  const { update, resetPassword, remove, sendInvitation, cancelInvitation } = useStaffMutations()
-  const [confirm, setConfirm] = useState<'reset' | 'deactivate' | 'delete' | 'cancel-invite' | null>(null)
+  const { user, can } = useAuth()
+  const { update, resetPassword, signOutEverywhere, remove, sendInvitation, cancelInvitation } = useStaffMutations()
+  const [confirm, setConfirm] = useState<'reset' | 'sign-out' | 'deactivate' | 'delete' | 'cancel-invite' | null>(null)
   const isSelf = user?.id === member.id
   // Invitations are for accounts nobody has used yet; afterwards it is a password reset.
   const invitable = member.is_active && !member.last_login_at && !!member.email
@@ -162,14 +176,15 @@ function StaffRow({
         <div className="text-xs text-muted-foreground">
           @{member.username}
           {member.staff_no && ` · ${member.staff_no}`}
+          {member.google_connected && ' · Google'}
           {!member.is_active && ' · deactivated'}
         </div>
       </TableCell>
       <TableCell>
         <div className="flex flex-wrap gap-1">
-          {member.roles.map((r) => (
+          {member.roles.map((r, i) => (
             <Badge key={r} variant={r === 'school_admin' ? 'default' : 'secondary'}>
-              {roleLabel(r)}
+              {member.role_names[i] ?? roleLabel(r)}
             </Badge>
           ))}
         </div>
@@ -196,7 +211,7 @@ function StaffRow({
         ) : member.must_change_password || !member.last_login_at ? (
           <Badge variant="outline">Awaiting first sign-in</Badge>
         ) : (
-          formatRelative(member.last_login_at)
+          <span title={`Last signed in ${formatRelative(member.last_login_at)}`}>{formatRelative(member.last_active_at ?? member.last_login_at)}</span>
         )}
       </TableCell>
       <TableCell className="text-right">
@@ -223,6 +238,11 @@ function StaffRow({
             <DropdownMenuItem onSelect={() => setConfirm('reset')}>
               <KeyRoundIcon /> Reset password
             </DropdownMenuItem>
+            {!isSelf && member.last_login_at && can('sign_out_staff') && (
+              <DropdownMenuItem onSelect={() => setConfirm('sign-out')}>
+                <LogOutIcon /> Sign out everywhere
+              </DropdownMenuItem>
+            )}
             {!isSelf && (
               <DropdownMenuItem
                 onSelect={() =>
@@ -257,6 +277,23 @@ function StaffRow({
           onConfirm={async () => {
             const result = await resetPassword.mutateAsync(member.id)
             onCredentials({ name: member.name, username: result.username, password: result.temporary_password })
+          }}
+        />
+        <ConfirmDialog
+          open={confirm === 'sign-out'}
+          onOpenChange={(open) => !open && setConfirm(null)}
+          title={`Sign ${member.name} out everywhere?`}
+          description="Every phone and computer they are signed in on is signed out, for a lost phone or a shared computer left signed in. Their password stays the same and they can sign in again."
+          confirmLabel="Sign out everywhere"
+          destructive
+          onConfirm={async () => {
+            try {
+              await signOutEverywhere.mutateAsync(member.id)
+              toast.success(`${member.name} is signed out on every device.`)
+            } catch (error) {
+              toast.error(error instanceof Error ? error.message : 'Could not sign them out.')
+              throw error
+            }
           }}
         />
         <ConfirmDialog
@@ -313,7 +350,7 @@ const staffSchema = z
     phone: z.string().trim().max(40),
     staff_no: z.string().trim().max(40),
     tsc_no: z.string().trim().max(40),
-    roles: z.array(z.enum(['school_admin', 'class_teacher', 'examiner'])).min(1, 'Choose at least one role'),
+    roles: z.array(z.string()).min(1, 'Choose at least one role'),
     send_invitation: z.boolean(),
   })
   .refine((v) => !v.send_invitation || v.email !== '', { path: ['email'], message: 'Enter the email address to send the invitation to' })
@@ -338,6 +375,7 @@ function StaffDialog({
   onCreated: (member: StaffMember) => void
 }) {
   const { create, update } = useStaffMutations()
+  const assignable = useAssignableRoles()
   const [usernameTouched, setUsernameTouched] = useState(!!member)
   // The invitation switch follows the email field until someone flips it by hand.
   const [inviteTouched, setInviteTouched] = useState(false)
@@ -350,7 +388,7 @@ function StaffDialog({
       phone: member?.phone ?? '',
       staff_no: member?.staff_no ?? '',
       tsc_no: member?.tsc_no ?? '',
-      roles: (member?.roles.filter((r) => r !== 'super_admin') as StaffValues['roles']) ?? ['class_teacher'],
+      roles: member?.roles.filter((r) => r !== 'super_admin') ?? ['class_teacher'],
       send_invitation: false,
     },
   })
@@ -401,26 +439,20 @@ function StaffDialog({
       </Field>
       <Field label="Roles" error={errors.roles?.message}>
         <div className="grid gap-2 rounded-lg border p-3">
-          {grantable.map((role) => (
-            <label key={role} className="flex items-start gap-2 text-sm">
+          {assignable.map((role) => (
+            <label key={role.slug} className="flex items-start gap-2 text-sm">
               <Checkbox
                 className="mt-0.5"
-                checked={roles.includes(role as StaffValues['roles'][number])}
+                checked={roles.includes(role.slug)}
                 onCheckedChange={(checked) =>
-                  form.setValue(
-                    'roles',
-                    checked ? [...roles, role as StaffValues['roles'][number]] : roles.filter((r) => r !== role),
-                    { shouldValidate: form.formState.isSubmitted },
-                  )
+                  form.setValue('roles', checked ? [...roles, role.slug] : roles.filter((r) => r !== role.slug), {
+                    shouldValidate: form.formState.isSubmitted,
+                  })
                 }
               />
               <span>
-                {roleLabel(role)}
-                <span className="block text-xs text-muted-foreground">
-                  {role === 'school_admin' && 'Everything in this app: set-up, exams, staff and pupils.'}
-                  {role === 'class_teacher' && 'Sees their class’s marks and fills in report card remarks.'}
-                  {role === 'examiner' && 'Enters marks for the subjects and classes they are given.'}
-                </span>
+                {role.name}
+                {role.description && <span className="block text-xs text-muted-foreground">{role.description}</span>}
               </span>
             </label>
           ))}

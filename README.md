@@ -43,6 +43,22 @@ Demo sign-in after `php artisan migrate:fresh --seed` in the API:
 Sign-in takes a username **or** an email address, and no school code: both are
 unique across every school, so the account names its own school.
 
+**Continue with Google** signs in an existing account whose email matches the
+Google account, and can also accept an invitation. It appears once
+`VITE_GOOGLE_WEB_CLIENT_ID` is set (see `.env.example`) and the API has the same
+client. Set-up, including the Android SHA-1 and the iOS URL scheme, is in
+`Educa_Lara/docs/authentication.md`. Sessions end after 90 days, or 30 days
+unused. Settings → Account lists signed-in devices, and the Staff screen can sign
+someone out everywhere.
+
+**Subscription.** Each school has one Educa subscription (Educa_Lara
+`docs/billing.md`). While it has lapsed, **Exams** is blurred behind a renewal
+card and the API refuses exam work with 402. **Settings → Subscription**
+(`manage_billing`) shows the paid-until date and payments, and renews with an
+M-Pesa prompt or the Paybill. Superadmins set each school's price and cycle,
+extend or record payments, and assign unmatched Paybill payments under
+**Platform → Billing**.
+
 `teacher` and `examiner` accounts are refused here by design.
 
 **Email.** Staff invitations, "Forgot your password?" and password-changed

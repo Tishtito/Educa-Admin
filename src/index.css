@@ -143,3 +143,18 @@
     transform: translateX(300%);
   }
 }
+
+/* Bottom nav: the active icon popping into its circle. */
+@keyframes educa-pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}

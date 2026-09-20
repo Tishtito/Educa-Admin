@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Building2Icon, CheckIcon, CopyIcon, LogInIcon, MailCheckIcon, PlusIcon, SearchIcon } from 'lucide-react'
+import { Building2Icon, CheckIcon, CopyIcon, LogInIcon, MailCheckIcon, PlusIcon, SearchIcon, WalletIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/auth/useAuth'
+import { SchoolSubscriptionDialog } from '@/features/billing/SchoolSubscriptionDialog'
 import { ConfirmDialog } from '@/components/data/ConfirmDialog'
 import { Field } from '@/components/data/Field'
 import { FormDialog } from '@/components/data/FormDialog'
@@ -30,12 +31,13 @@ export function SchoolsPage() {
   const [search, setSearch] = useState('')
   const [creating, setCreating] = useState(false)
   const [created, setCreated] = useState<CreatedSchool | null>(null)
+  const [billing, setBilling] = useState<{ uuid: string; name: string } | null>(null)
 
   return (
     <>
       <PageHeader
         title="Schools"
-        description="Every school on the platform. Open one to work as its administrator; suspending a school signs everyone out."
+        description="Every school on the platform. Open one to work as its administrator, set its subscription, or suspend it (which signs everyone out)."
         actions={
           <Button onClick={() => setCreating(true)}>
             <PlusIcon /> New school
@@ -96,6 +98,9 @@ export function SchoolsPage() {
                             onConfirm={() => update.mutateAsync({ uuid: school.uuid, status: 'suspended' })}
                           />
                         )}
+                        <Button variant="ghost" size="sm" onClick={() => setBilling({ uuid: school.uuid, name: school.name })}>
+                          <WalletIcon /> Subscription
+                        </Button>
                         <Button
                           variant="outline"
                           size="sm"
@@ -118,6 +123,7 @@ export function SchoolsPage() {
       </QueryState>
       {creating && <CreateSchoolDialog open onOpenChange={setCreating} onCreated={setCreated} />}
       <CreatedDialog result={created} onClose={() => setCreated(null)} />
+      {billing && <SchoolSubscriptionDialog school={billing} onClose={() => setBilling(null)} />}
     </>
   )
 }

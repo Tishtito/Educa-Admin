@@ -3,7 +3,7 @@ import { Navigate, Outlet, useLocation } from 'react-router'
 import { WifiOffIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FullScreenLoader } from '@/components/data/FullScreenLoader'
-import type { RoleSlug } from '@/lib/api/types'
+import type { Permission } from '@/lib/permissions'
 import { useAuth } from './useAuth'
 
 /** Signed-in users only; forced password changes are enforced here too. */
@@ -37,8 +37,18 @@ export function GuestOnly() {
   return <Outlet />
 }
 
-export function RequireRole({ roles, children }: { roles: RoleSlug[]; children?: ReactNode }) {
-  const { hasRole } = useAuth()
-  if (!hasRole(...roles)) return <Navigate to="/" replace />
+/** Pages that need a permission (any of those listed). Without it, back to the start page. */
+export function RequirePermission({
+  permission,
+  fallback = '/',
+  children,
+}: {
+  permission: Permission | Permission[]
+  /** Where to send someone without it. */
+  fallback?: string
+  children?: ReactNode
+}) {
+  const { can } = useAuth()
+  if (!can(...(Array.isArray(permission) ? permission : [permission]))) return <Navigate to={fallback} replace />
   return children ?? <Outlet />
 }

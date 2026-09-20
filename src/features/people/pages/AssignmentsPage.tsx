@@ -100,7 +100,8 @@ function ClassTeachersView({ yearId }: { yearId: number }) {
   const classes = useClasses({ active: true })
   const staff = useStaff()
   const assignments = useClassTeachers(yearId)
-  const teachers = (staff.data ?? []).filter((s) => s.is_active && s.roles.includes('class_teacher'))
+  // Whoever can look after a class, whatever their role is called.
+  const teachers = (staff.data ?? []).filter((s) => s.is_active && s.permissions.includes('view_class_pupils'))
 
   return (
     <QueryState query={assignments}>
@@ -202,7 +203,8 @@ function ExaminerGrid({ schoolClass, yearId }: { schoolClass: SchoolClass; yearI
   const levelSubjects = useLevelSubjects()
   const assignments = useExaminers(yearId, schoolClass.id)
   const { setExaminers } = useAssignmentMutations()
-  const examiners = (staff.data ?? []).filter((s) => s.is_active && s.roles.includes('examiner'))
+  // Whoever may enter marks, whatever their role is called.
+  const examiners = (staff.data ?? []).filter((s) => s.is_active && s.permissions.includes('enter_marks'))
   const subjects = (levelSubjects.data ?? []).filter((ls) => ls.level_id === schoolClass.level_id && ls.is_active)
 
   return (

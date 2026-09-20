@@ -2,6 +2,7 @@ import { useAuth } from '@/auth/useAuth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ChangePasswordForm } from '@/features/auth/ChangePasswordForm'
+import { SessionsCard } from '@/features/auth/SessionsCard'
 import { roleLabel } from '@/lib/format'
 
 export function AccountPage() {
@@ -35,9 +36,9 @@ export function AccountPage() {
             <div className="grid grid-cols-[8rem_1fr] gap-2">
               <dt className="text-muted-foreground">Roles</dt>
               <dd className="flex flex-wrap gap-1">
-                {user.roles.map((role) => (
+                {user.roles.map((role, i) => (
                   <Badge key={role} variant="secondary">
-                    {roleLabel(role)}
+                    {user.role_names?.[i] ?? roleLabel(role)}
                   </Badge>
                 ))}
               </dd>
@@ -54,6 +55,9 @@ export function AccountPage() {
           <ChangePasswordForm />
         </CardContent>
       </Card>
+      <div className="lg:col-span-2">
+        <SessionsCard />
+      </div>
     </div>
   )
 }

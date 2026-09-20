@@ -1,3 +1,4 @@
+import { useAuth } from '@/auth/useAuth'
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { CalculatorIcon, TriangleAlertIcon } from 'lucide-react'
@@ -31,6 +32,9 @@ export function ExamOverviewTab() {
   const transition = useTransitionExam(exam.id)
   const compute = useComputeExam(exam.id)
   const [summary, setSummary] = useState<ComputeSummary | null>(null)
+  const { can } = useAuth()
+  const mayMove = can('change_exam_status')
+  const mayCompute = can('compute_exam_results') && canCompute(exam.status)
 
   const moves = examTransitions[exam.status]
     .map((to) => ({ to, copy: transitionCopy[`${exam.status}->${to}`] }))
@@ -76,7 +80,7 @@ export function ExamOverviewTab() {
           )}
 
           <div className="flex flex-wrap gap-2">
-            {moves.map(({ to, copy }) => (
+            {mayMove && moves.map(({ to, copy }) => (
               <ConfirmDialog
                 key={to}
                 trigger={
@@ -97,13 +101,13 @@ export function ExamOverviewTab() {
                 onConfirm={() => move(to)}
               />
             ))}
-            {canCompute(exam.status) && (
+            {mayCompute && (
               <Button variant="outline" onClick={() => void recompute().catch(() => undefined)} disabled={compute.isPending}>
                 <CalculatorIcon /> {compute.isPending ? 'Computing…' : 'Recompute results'}
               </Button>
             )}
-            {moves.length === 0 && !canCompute(exam.status) && (
-              <p className="text-sm text-muted-foreground">No further steps for this exam.</p>
+            {(!mayMove || moves.length === 0) && !mayCompute && (
+              <p className="text-sm text-muted-foreground">{mayMove ? 'No further steps for this exam.' : 'Moving the exam on is done by someone allowed to change exam status.'}</p>
             )}
           </div>
 

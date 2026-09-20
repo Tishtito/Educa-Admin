@@ -67,6 +67,10 @@ function handleGlobally(error: ApiError): void {
     session.emit('unauthorized')
   } else if (error.status === 403 && (error.body as { password_change_required?: boolean })?.password_change_required) {
     session.emit('password-change-required')
+  } else if (error.status === 402 && (error.body as { subscription_required?: boolean })?.subscription_required) {
+    // The school's subscription lapsed while this page was open: reload who we
+    // are, so the locked pages show the renewal screen instead of errors.
+    session.emit('subscription-required')
   }
 }
 

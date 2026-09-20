@@ -33,7 +33,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { BottomNav } from '@/components/layout/BottomNav'
 import { SchoolPicker } from '@/features/platform/components/SchoolPicker'
+import { SubscriptionBanner } from '@/features/billing/SubscriptionLock'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { useNativeBackButton } from '@/lib/native'
 
@@ -47,6 +49,10 @@ export function AppShell() {
   // Pages load on demand; show that a tap was taken while the next one loads.
   const navigating = useNavigation().state !== 'idle'
   useNativeBackButton(drawerOpen ? () => setDrawerOpen(false) : undefined)
+  const bottomItems = useVisibleNavigation()
+    .flatMap((section) => section.items)
+    .filter((item) => item.primary)
+    .slice(0, 4)
 
   return (
     <div className="flex min-h-dvh bg-muted/30">
@@ -79,6 +85,7 @@ export function AppShell() {
               <div className="h-full w-1/3 animate-[educa-progress_1s_ease-in-out_infinite] bg-primary" />
             </div>
           )}
+          <SubscriptionBanner />
           {!online && (
             <div className="flex items-center justify-center gap-2 bg-amber-100 px-3 py-1 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
               <WifiOffIcon className="size-3.5" /> You are offline. Changes cannot be saved until you reconnect.
@@ -86,23 +93,23 @@ export function AppShell() {
           )}
         </header>
 
-        <main className="mx-auto w-full max-w-7xl flex-1 px-3 py-4 pb-24 sm:px-6 sm:py-6 md:pb-6 print:max-w-none print:p-0">
+        <main className="mx-auto w-full max-w-7xl flex-1 px-3 py-4 pb-[calc(7rem+env(safe-area-inset-bottom))] sm:px-6 sm:py-6 md:pb-6 print:max-w-none print:p-0">
           <Outlet />
         </main>
 
-        <BottomNav />
+        {bottomItems.length >= 2 && <BottomNav items={bottomItems} className="md:hidden" />}
       </div>
     </div>
   )
 }
 
-function useVisibleNavigation() {
-  const { hasRole, isPlatformAdmin, school } = useAuth()
+export function useVisibleNavigation() {
+  const { can, isPlatformAdmin, school } = useAuth()
   return navigation
     .map((section) => ({
       ...section,
       items: section.items.filter(
-        (item) => hasRole(...item.roles) && (!item.tenant || !isPlatformAdmin || school !== null || item.to === '/'),
+        (item) => (item.permissions.length === 0 || can(...item.permissions)) && (!item.tenant || !isPlatformAdmin || school !== null || item.to === '/'),
       ),
     }))
     .filter((section) => section.items.length > 0)
@@ -170,42 +177,6 @@ function SidebarLink({ item }: { item: NavItem }) {
       <Icon className="size-4" />
       {item.label}
     </NavLink>
-  )
-}
-
-function BottomNav() {
-  const items = useVisibleNavigation()
-    .flatMap((section) => section.items)
-    .filter((item) => item.primary)
-    .slice(0, 4)
-
-  if (items.length < 2) return null
-
-  return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden print:hidden">
-      <ul className="grid" style={{ gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))` }}>
-        {items.map((item) => {
-          const Icon = item.icon
-          return (
-            <li key={item.to}>
-              <NavLink
-                to={item.to}
-                end={item.end}
-                className={({ isActive }) =>
-                  cn(
-                    'flex flex-col items-center gap-0.5 py-2 text-[11px]',
-                    isActive ? 'font-medium text-primary' : 'text-muted-foreground',
-                  )
-                }
-              >
-                <Icon className="size-5" />
-                {item.label}
-              </NavLink>
-            </li>
-          )
-        })}
-      </ul>
-    </nav>
   )
 }
 
