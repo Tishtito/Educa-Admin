@@ -95,7 +95,7 @@ function MarksheetEditor({
 
   const students = sheet.students.filter((s) => {
     const q = search.trim().toLowerCase()
-    return !q || s.name.toLowerCase().includes(q) || (s.admission_no ?? '').toLowerCase().includes(q)
+    return !q || s.name.toLowerCase().includes(q) || (s.assessment_no ?? '').toLowerCase().includes(q)
   })
 
   function update(key: string, patch: Partial<Cell>) {
@@ -248,7 +248,7 @@ function MarksheetEditor({
               <tr key={student.enrolment_id} className="border-b last:border-0 hover:bg-muted/30">
                 <td className="sticky left-0 z-10 max-w-52 bg-card px-3 py-1.5">
                   <div className="truncate font-medium">{student.name}</div>
-                  <div className="text-xs text-muted-foreground">{student.admission_no}</div>
+                  <div className="text-xs text-muted-foreground">{student.assessment_no}</div>
                 </td>
                 {sheet.papers.map((paper, col) => {
                   const key = cellKey(student.enrolment_id, paper.subject_paper_id)

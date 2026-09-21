@@ -11,7 +11,10 @@ export interface BillingOverview {
 }
 
 export const billingKeys = {
-  overview: ['billing'] as const,
+  // Separate branches: refreshing the overview must not also invalidate the
+  // payment being polled, which would refetch it, settle it, refresh the
+  // overview again — a loop that locks the page up mid-payment.
+  overview: ['billing', 'overview'] as const,
   payment: (id: number) => ['billing', 'payment', id] as const,
 }
 
@@ -38,7 +41,8 @@ export function usePaymentStatus(id: number | null) {
     queryKey: billingKeys.payment(id ?? 0),
     queryFn: async ({ signal }) => {
       const payment = await api.get<SubscriptionPayment & { subscription: SubscriptionState }>(`/billing/payments/${id}`, { signal })
-      if (payment.status !== 'pending') void queryClient.invalidateQueries({ queryKey: billingKeys.overview })
+      // Settled: the status card, amount due and payment list are all stale now.
+      if (payment.status !== 'pending') void queryClient.invalidateQueries({ queryKey: billingKeys.overview, exact: true })
       return payment
     },
     enabled: id !== null,

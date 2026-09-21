@@ -113,7 +113,7 @@ function MarklistTable({ marklist, examName }: { marklist: Marklist; examName: s
                 <td className="sticky left-0 z-10 max-w-56 bg-card px-3 py-1.5 print:static">
                   <div className="truncate font-medium">{student.name}</div>
                   <div className="text-xs text-muted-foreground">
-                    {student.admission_no}
+                    {student.assessment_no}
                     {!student.is_complete && ` · ${student.subjects_counted}/${student.subjects_expected} subjects`}
                   </div>
                 </td>

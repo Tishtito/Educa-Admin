@@ -147,7 +147,7 @@ export function useStudentResults(id: number) {
   })
 }
 
-export type StudentInput = Pick<Student, 'admission_no' | 'first_name' | 'last_name'> &
+export type StudentInput = Pick<Student, 'assessment_no' | 'first_name' | 'last_name'> &
   Partial<Pick<Student, 'middle_name' | 'upi' | 'gender' | 'date_of_birth' | 'guardian_name' | 'guardian_phone'>> & {
     class_id?: number
     academic_year_id?: number

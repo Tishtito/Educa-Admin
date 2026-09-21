@@ -46,7 +46,7 @@ function StudentProfile({ student }: { student: Student }) {
   const current = student.enrolments?.find((e) => e.academic_year_id === currentYearId)
 
   const details: [string, string | null][] = [
-    ['Admission no.', student.admission_no],
+    ['Assessment no.', student.assessment_no],
     ['UPI', student.upi],
     ['Gender', student.gender ? student.gender[0].toUpperCase() + student.gender.slice(1) : null],
     ['Date of birth', student.date_of_birth ? formatDate(student.date_of_birth) : null],

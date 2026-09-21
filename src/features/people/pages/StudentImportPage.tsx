@@ -15,10 +15,10 @@ import { errorMessage } from '@/lib/api/errors'
 import type { ImportResult } from '@/lib/api/types'
 import { useStudentMutations } from '../api'
 
-const TEMPLATE = 'Admission No,First Name,Middle Name,Last Name,Gender,Date of Birth,Class,Guardian Name,Guardian Phone,UPI\r\nGAT-101,Achieng,Atieno,Odhiambo,Female,21/03/2016,Grade 4 Blue,Mary Odhiambo,0712000111,\r\n'
+const TEMPLATE = 'Assessment No,First Name,Middle Name,Last Name,Gender,Date of Birth,Class,Guardian Name,Guardian Phone,UPI\r\nGAT-101,Achieng,Atieno,Odhiambo,Female,21/03/2016,Grade 4 Blue,Mary Odhiambo,0712000111,\r\n'
 
 const fieldLabels: Record<string, string> = {
-  admission_no: 'Admission no.',
+  assessment_no: 'Assessment no.',
   name: 'Name',
   first_name: 'First name',
   middle_name: 'Middle name',
@@ -92,7 +92,7 @@ export function StudentImportPage() {
           <CardHeader>
             <CardTitle className="text-base">1. Choose a file</CardTitle>
             <CardDescription>
-              Needs an admission number, the pupil’s name (one “Name” column or first and last name) and their class, spelled as on the Classes
+              Needs an assessment number, the pupil’s name (one “Name” column or first and last name) and their class, spelled as on the Classes
               page. Gender, date of birth and guardian details are optional.
             </CardDescription>
           </CardHeader>
@@ -191,7 +191,7 @@ export function StudentImportPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Adm. no.</TableHead>
+                      <TableHead>Assessment no.</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Class</TableHead>
                       <TableHead>Gender</TableHead>
@@ -202,7 +202,7 @@ export function StudentImportPage() {
                   <TableBody>
                     {check.preview.map((row, i) => (
                       <TableRow key={i}>
-                        <TableCell>{row.admission_no}</TableCell>
+                        <TableCell>{row.assessment_no}</TableCell>
                         <TableCell>{[row.first_name, row.middle_name, row.last_name].filter(Boolean).join(' ')}</TableCell>
                         <TableCell>{row.class_name}</TableCell>
                         <TableCell>{row.gender ?? '—'}</TableCell>

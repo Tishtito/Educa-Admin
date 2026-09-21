@@ -16,7 +16,7 @@ export function marklistToCsv(marklist: Marklist): string {
   const header = [
     'Position',
     'Stream position',
-    'Admission no',
+    'Assessment no',
     'Name',
     ...marklist.subjects.flatMap((s) => [s.code || s.name, `${s.code || s.name} level`]),
     'Total',
@@ -27,7 +27,7 @@ export function marklistToCsv(marklist: Marklist): string {
   const rows = marklist.students.map((student) => [
     student.grade_position,
     student.stream_position,
-    safe(student.admission_no),
+    safe(student.assessment_no),
     safe(student.name),
     ...marklist.subjects.flatMap((subject) => {
       const score = student.scores.find((s) => s.level_subject_id === subject.level_subject_id)

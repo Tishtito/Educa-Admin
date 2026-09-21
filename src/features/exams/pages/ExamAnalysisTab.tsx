@@ -229,7 +229,7 @@ function RankingView() {
                         <td className="px-2 py-1.5 text-right tabular-nums">{s.grade_position ?? '—'}</td>
                         <td className="px-3 py-1.5">
                           <div className="font-medium">{s.name}</div>
-                          <div className="text-xs text-muted-foreground">{s.admission_no}</div>
+                          <div className="text-xs text-muted-foreground">{s.assessment_no}</div>
                         </td>
                         <td className="px-2 py-1.5 whitespace-nowrap">
                           {s.class_name} <span className="text-xs text-muted-foreground">({s.stream_position ?? '—'})</span>
@@ -264,10 +264,10 @@ function rankingCsv(list: StreamList): string {
     const safe = /^[=+\-@]/.test(text) ? `'${text}` : text
     return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
   }
-  const header = ['Position', 'Admission no', 'Name', 'Class', 'Class position', ...list.subjects.map((s) => s.code || s.name), 'Total', 'Mean', 'Level']
+  const header = ['Position', 'Assessment no', 'Name', 'Class', 'Class position', ...list.subjects.map((s) => s.code || s.name), 'Total', 'Mean', 'Level']
   const rows = list.students.map((s) => [
     s.grade_position,
-    s.admission_no,
+    s.assessment_no,
     s.name,
     s.class_name,
     s.stream_position,
