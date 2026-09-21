@@ -88,9 +88,17 @@ const headerAliases: Record<string, string> = {
   phone_number: 'guardian_phone',
   upi: 'upi',
   nemis_upi: 'upi',
+  status: 'status',
+  // The day the pupil joined this class, not their identifier.
+  started_on: 'started_on',
+  joined: 'started_on',
+  date_joined: 'started_on',
+  joining_date: 'started_on',
+  start_date: 'started_on',
+  admission_date: 'started_on',
 }
 
-export const importFields = ['assessment_no', 'name', 'first_name', 'middle_name', 'last_name', 'gender', 'date_of_birth', 'class', 'guardian_name', 'guardian_phone', 'upi'] as const
+export const importFields = ['assessment_no', 'name', 'first_name', 'middle_name', 'last_name', 'gender', 'date_of_birth', 'class', 'guardian_name', 'guardian_phone', 'upi', 'status', 'started_on'] as const
 
 export function normaliseHeader(header: string): string | null {
   const key = header

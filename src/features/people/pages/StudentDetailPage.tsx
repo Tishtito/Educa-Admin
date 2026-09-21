@@ -52,6 +52,8 @@ function StudentProfile({ student }: { student: Student }) {
     ['Date of birth', student.date_of_birth ? formatDate(student.date_of_birth) : null],
     ['Guardian', student.guardian_name],
     ['Guardian phone', student.guardian_phone],
+    // When this year's enrolment began: the day they joined the class.
+    ['Joined', current?.started_on ? formatDate(current.started_on) : null],
   ]
 
   return (

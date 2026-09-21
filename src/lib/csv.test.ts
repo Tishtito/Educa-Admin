@@ -28,6 +28,9 @@ describe('headers', () => {
     expect(normaliseHeader('D.O.B')).toBeNull()
     expect(normaliseHeader('DOB')).toBe('date_of_birth')
     expect(normaliseHeader('Parent Phone')).toBe('guardian_phone')
+    expect(normaliseHeader('Status')).toBe('status')
+    expect(normaliseHeader('Date Joined')).toBe('started_on')
+    expect(normaliseHeader('Joining date')).toBe('started_on')
   })
 
   it('turns rows into records and reports unmapped columns', () => {
