@@ -35,6 +35,60 @@ someone halfway through a school set-up change.
 
 ## Deploy
 
+**Push to `dev`. That is the whole deploy.**
+
+GitHub Actions runs typecheck, lint, tests and the build, checks the right API
+URL got compiled in, then streams the built `dist/` to the server over SSH. The
+server unpacks it into a timestamped release and swaps the `current` symlink.
+If the site does not return 200 afterwards, it rolls itself back.
+
+```bash
+git checkout dev
+git add -A && git commit -m "..."
+git push origin dev          # ~2 minutes to live
+```
+
+Watch it at <https://github.com/Tishtito/Educa-Admin/actions>.
+
+`dev` is the only branch CI touches. `main` is dormant: nothing builds or
+deploys from it.
+
+### What the pipeline needs
+
+Configured once, in the repo's Settings -> Secrets and variables -> Actions.
+
+**Variables** (not secrets - every `VITE_` value compiles into the bundle and
+is readable by anyone who opens DevTools):
+
+| Variable | Value |
+|---|---|
+| `VITE_API_URL` | `https://educa-api.codepasstech.top/api` |
+| `VITE_GOOGLE_WEB_CLIENT_ID` | the shared Google web client |
+| `VITE_GOOGLE_IOS_CLIENT_ID` | only if an iOS client exists |
+
+**Secrets:** `DEPLOY_SSH_KEY`, `DEPLOY_HOST`, `DEPLOY_USER`,
+`DEPLOY_KNOWN_HOSTS`. The key is pinned on the server to a single forced
+command (`educa-admin-deploy`) with no shell, no pty and no port forwarding, so a leaked
+secret can only publish a release of this one app.
+
+### Rollback
+
+```bash
+ssh codepasstech 'ls -1t <built-in function dir>/releases'
+ssh codepasstech 'ln -sfn <built-in function dir>/releases/<previous> <built-in function dir>/current'
+```
+
+Three releases are kept. Clients that already accepted the new service worker
+keep it until they fetch the older one.
+
+---
+
+## Deploying by hand
+
+Only needed if Actions is down, or to test a build before committing. Everything
+below is what the pipeline does for you.
+
+
 Everything runs from this machine. The build happens locally on purpose: the
 VPS has 1 vCPU and 1.9 GB RAM and already runs ~20 sites, so a `tsc` + `vite`
 build there risks thrashing swap.

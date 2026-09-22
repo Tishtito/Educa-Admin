@@ -1,0 +1,104 @@
+name: CI
+
+# dev is the only deployed branch, so it is the only branch CI runs on.
+# main is dormant in this repo and is deliberately neither built nor deployed.
+on:
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [dev]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: Check and build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests
+        run: npm run test
+
+      - name: Build
+        env:
+          # Repository VARIABLES, not secrets: every VITE_ value is compiled
+          # into the bundle and readable by anyone who opens DevTools.
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_GOOGLE_WEB_CLIENT_ID: ${{ vars.VITE_GOOGLE_WEB_CLIENT_ID }}
+          VITE_GOOGLE_IOS_CLIENT_ID: ${{ vars.VITE_GOOGLE_IOS_CLIENT_ID }}
+        run: |
+          test -n "$VITE_API_URL" || { echo "VITE_API_URL repository variable is not set"; exit 1; }
+          npm run build
+
+      - name: Verify what got baked in
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+        run: |
+          # The most common way a frontend deploy ships broken: the app loads
+          # fine and every API call quietly goes to localhost.
+          grep -rq "$VITE_API_URL" dist/assets/*.js \
+            || { echo "FAILED: bundle does not contain $VITE_API_URL"; exit 1; }
+          if grep -rq 'localhost:8000' dist/; then
+            echo "FAILED: bundle still points at localhost"; exit 1
+          fi
+          test -s dist/index.html
+          test -d dist/assets
+          echo "OK: bundle targets $VITE_API_URL"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          # Keeps 14 days of exactly what was deployed, for when production
+          # looks wrong and you need the actual bytes.
+          retention-days: 14
+
+  deploy:
+    name: Deploy
+    needs: build
+    # Belt and braces: the triggers already limit this to dev, but a
+    # pull_request into dev builds from the PR head and must never ship.
+    if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    concurrency:
+      # Serialise; no cancel-in-progress, a release must not be killed
+      # between unpacking and the symlink swap.
+      group: deploy-admin
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Ship to the server
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          printf '%s\n' "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+          # No command is passed: the key is pinned to a forced command on the
+          # server that reads this tarball from stdin.
+          tar -czf - -C dist . \
+            | ssh -T -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes \
+                  "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}"
