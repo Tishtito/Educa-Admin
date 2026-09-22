@@ -90,13 +90,28 @@ jobs:
           name: dist
           path: dist
 
-      - name: Ship to the server
+      - name: Check deploy credentials
         run: |
           mkdir -p ~/.ssh && chmod 700 ~/.ssh
           printf '%s\n' "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           printf '%s\n' "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
+
+          # ssh fails with a bare exit 255 for both a bad key and a bad
+          # known_hosts, which says nothing. Fail here with a reason instead.
+          ssh-keygen -yf ~/.ssh/id_ed25519 >/dev/null 2>&1 \
+            || { echo "DEPLOY_SSH_KEY is not a usable private key (truncated paste, or a .pub)"; exit 1; }
+          # Fingerprints are public: this is how you spot the wrong key in a secret.
+          echo "deploy key : $(ssh-keygen -lf ~/.ssh/id_ed25519 | awk '{print $2}')"
+          test -s ~/.ssh/known_hosts \
+            || { echo "DEPLOY_KNOWN_HOSTS is empty"; exit 1; }
+          ssh-keygen -lf ~/.ssh/known_hosts >/dev/null 2>&1 \
+            || { echo "DEPLOY_KNOWN_HOSTS is not a valid known_hosts line"; exit 1; }
+          echo "known host : $(ssh-keygen -lf ~/.ssh/known_hosts | head -1 | awk '{print $2}')"
+
+      - name: Ship to the server
+        run: |
           # No command is passed: the key is pinned to a forced command on the
           # server that reads this tarball from stdin.
           tar -czf - -C dist . \
