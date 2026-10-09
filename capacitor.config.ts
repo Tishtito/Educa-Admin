@@ -12,7 +12,7 @@ const devServer = process.env.CAP_SERVER_URL
 
 const config: CapacitorConfig = {
   appId: 'ke.codepass.educa.admin',
-  appName: 'Educa Admin',
+  appName: 'Elimu Pass Admin',
   webDir: 'dist',
   server: devServer
     ? {

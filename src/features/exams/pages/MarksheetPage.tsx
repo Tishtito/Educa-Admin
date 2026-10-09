@@ -220,7 +220,7 @@ function MarksheetEditor({
       </div>
 
       <Card className="overflow-x-auto p-0">
-        <table className="w-full min-w-max text-sm">
+        <table className="touch-dense w-full min-w-max text-sm">
           <thead className="border-b bg-muted/50 text-left">
             <tr>
               <th className="sticky left-0 z-10 bg-muted px-3 py-2 font-medium">Pupil</th>

@@ -11,7 +11,7 @@ export function registerServiceWorker() {
 
   const updateSW = registerSW({
     onNeedRefresh() {
-      toast('A new version of Educa Admin is available.', {
+      toast('A new version of Elimu Pass Admin is available.', {
         duration: Infinity,
         action: { label: 'Reload', onClick: () => void updateSW(true) },
       })

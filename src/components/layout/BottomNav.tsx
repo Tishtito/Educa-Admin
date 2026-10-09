@@ -80,7 +80,7 @@ export function BottomNav({ items, className }: { items: BottomNavItem[]; classN
               {ActiveIcon && (
                 <ActiveIcon
                   key={items[active].to}
-                  className="size-[calc(var(--c)*0.46)] animate-[educa-pop_320ms_ease-out] motion-reduce:animate-none"
+                  className="size-[calc(var(--c)*0.46)] animate-[elimupass-pop_320ms_ease-out] motion-reduce:animate-none"
                 />
               )}
             </div>

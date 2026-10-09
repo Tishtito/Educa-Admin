@@ -22,7 +22,7 @@ export function BillingPage() {
   return (
     <QueryState query={billing}>
       {(data) => (
-        <div className="grid max-w-5xl gap-6 lg:grid-cols-[1fr_1fr]">
+        <div className="grid max-w-5xl items-start gap-6 lg:grid-cols-[1fr_1fr]">
           <StatusCard data={data} />
           <PaybillCard data={data} />
           <div className="lg:col-span-2">
@@ -58,7 +58,7 @@ function StatusCard({ data }: { data: BillingOverview }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          Educa subscription <Badge variant={badge.variant}>{badge.label}</Badge>
+          Elimu Pass subscription <Badge variant={badge.variant}>{badge.label}</Badge>
         </CardTitle>
         <CardDescription>
           Exams, marking, mark lists and report cards need an active subscription. Pupils, staff and set-up are always available.
@@ -67,7 +67,7 @@ function StatusCard({ data }: { data: BillingOverview }) {
       <CardContent className="grid gap-4">
         <dl className="grid gap-2 text-sm">
           {rows.map(([label, value]) => (
-            <div key={label} className="grid grid-cols-[7rem_1fr] gap-2">
+            <div key={label} className="grid grid-cols-1 gap-0.5 sm:grid-cols-[7rem_1fr] sm:gap-2">
               <dt className="text-muted-foreground">{label}</dt>
               <dd>{value}</dd>
             </div>
@@ -75,11 +75,11 @@ function StatusCard({ data }: { data: BillingOverview }) {
         </dl>
         {!priced ? (
           <Alert>
-            <AlertDescription>Educa has not set your school’s price yet. Contact Educa to set up your subscription.</AlertDescription>
+            <AlertDescription>Elimu Pass has not set your school’s price yet. Contact Elimu Pass to set up your subscription.</AlertDescription>
           </Alert>
         ) : !data.mpesa_available ? (
           <Alert>
-            <AlertDescription>M-Pesa payments are not switched on yet. Contact Educa to renew.</AlertDescription>
+            <AlertDescription>M-Pesa payments are not switched on yet. Contact Elimu Pass to renew.</AlertDescription>
           </Alert>
         ) : subscription.amount_due_kes === 0 ? (
           <p className="text-sm text-muted-foreground">Your credit already covers the next renewal.</p>
@@ -246,52 +246,121 @@ function Outcome({ icon, title, children }: { icon: React.ReactNode; title: stri
   )
 }
 
-const methodLabel: Record<SubscriptionPayment['method'], string> = { stk: 'M-Pesa prompt', paybill: 'Paybill', manual: 'Recorded by Educa' }
+const methodLabel: Record<SubscriptionPayment['method'], string> = { stk: 'M-Pesa prompt', paybill: 'Paybill', manual: 'Recorded by Elimu Pass' }
 
+function paymentBadge(p: SubscriptionPayment): { label: string; variant: 'secondary' | 'destructive' | 'outline' } {
+  if (p.status === 'succeeded') return { label: 'Paid', variant: 'secondary' }
+  if (p.status === 'failed') return { label: 'Failed', variant: 'destructive' }
+  return { label: 'Waiting', variant: 'outline' }
+}
+
+/** What a payment bought — `short` for the table column, `phrase` for the phone card. */
+function outcome(p: SubscriptionPayment): { short: string; phrase: string | null } {
+  if (p.cycles_added > 0) {
+    const date = formatDate(p.paid_until_after)
+    return { short: date, phrase: `Paid until ${date}` }
+  }
+  if (p.status === 'succeeded') return { short: 'Credit', phrase: 'Kept as credit' }
+  return { short: '—', phrase: null }
+}
+
+/**
+ * Six columns do not fit a phone, and an amount you cannot see next to its status is
+ * no use. Below `md` each payment is a card; from `md` up it is the table.
+ */
 function PaymentsCard({ payments }: { payments: SubscriptionPayment[] }) {
+  if (payments.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Payments</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">No payments yet.</p>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
-    <Card className="overflow-x-auto">
-      <CardHeader>
-        <CardTitle>Payments</CardTitle>
-      </CardHeader>
-      <CardContent className="p-0">
-        {payments.length === 0 ? (
-          <p className="px-6 pb-6 text-sm text-muted-foreground">No payments yet.</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>How</TableHead>
-                <TableHead>Receipt</TableHead>
-                <TableHead className="text-right">Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Paid until</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {payments.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell className="whitespace-nowrap">{formatDateTime(p.paid_at ?? p.created_at)}</TableCell>
-                  <TableCell>
-                    {methodLabel[p.method]}
-                    {p.phone && <div className="text-xs text-muted-foreground">{p.phone}</div>}
-                  </TableCell>
-                  <TableCell className="font-mono text-xs">{p.mpesa_receipt ?? p.reference ?? '—'}</TableCell>
-                  <TableCell className="text-right whitespace-nowrap">{formatKes(p.amount_kes)}</TableCell>
-                  <TableCell>
-                    <Badge variant={p.status === 'succeeded' ? 'secondary' : p.status === 'failed' ? 'destructive' : 'outline'}>
-                      {p.status === 'succeeded' ? 'Paid' : p.status === 'failed' ? 'Failed' : 'Waiting'}
-                    </Badge>
-                    {p.status === 'failed' && p.result_desc && <div className="mt-1 max-w-48 text-xs text-muted-foreground">{p.result_desc}</div>}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">{p.cycles_added > 0 ? formatDate(p.paid_until_after) : p.status === 'succeeded' ? 'Credit' : '—'}</TableCell>
+    <>
+      {/* Phones: a list of cards. */}
+      <section className="md:hidden" aria-labelledby="payments-heading">
+        <h2 id="payments-heading" className="mb-2 font-heading text-base leading-snug font-medium">
+          Payments
+        </h2>
+        <ul className="grid gap-2">
+          {payments.map((p) => (
+            <li key={p.id}>
+              <PaymentCard payment={p} />
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* Larger screens: a table. */}
+      <div className="hidden md:block">
+        <Card>
+          <CardHeader>
+            <CardTitle>Payments</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>How</TableHead>
+                  <TableHead>Receipt</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Paid until</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
+              </TableHeader>
+              <TableBody>
+                {payments.map((p) => {
+                  const badge = paymentBadge(p)
+                  return (
+                    <TableRow key={p.id}>
+                      <TableCell className="whitespace-nowrap">{formatDateTime(p.paid_at ?? p.created_at)}</TableCell>
+                      <TableCell>
+                        {methodLabel[p.method]}
+                        {p.phone && <div className="text-xs text-muted-foreground">{p.phone}</div>}
+                      </TableCell>
+                      <TableCell className="font-mono text-xs">{p.mpesa_receipt ?? p.reference ?? '—'}</TableCell>
+                      <TableCell className="text-right whitespace-nowrap">{formatKes(p.amount_kes)}</TableCell>
+                      <TableCell>
+                        <Badge variant={badge.variant}>{badge.label}</Badge>
+                        {p.status === 'failed' && p.result_desc && <div className="mt-1 max-w-48 text-xs text-muted-foreground">{p.result_desc}</div>}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">{outcome(p).short}</TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+    </>
+  )
+}
+
+function PaymentCard({ payment }: { payment: SubscriptionPayment }) {
+  const badge = paymentBadge(payment)
+  const receipt = payment.mpesa_receipt ?? payment.reference
+  const { phrase } = outcome(payment)
+  const meta = [formatDateTime(payment.paid_at ?? payment.created_at), methodLabel[payment.method], payment.phone].filter(Boolean)
+
+  return (
+    <Card className="gap-1 px-4 py-3">
+      <div className="flex items-start justify-between gap-2">
+        <span className="font-medium tabular-nums">{formatKes(payment.amount_kes)}</span>
+        <Badge variant={badge.variant}>{badge.label}</Badge>
+      </div>
+      <div className="text-xs text-muted-foreground">{meta.join(' · ')}</div>
+      {receipt && <div className="font-mono text-xs text-muted-foreground">Receipt {receipt}</div>}
+      {phrase && <div className="text-xs text-muted-foreground">{phrase}</div>}
+      {payment.status === 'failed' && payment.result_desc && <div className="text-xs text-muted-foreground">{payment.result_desc}</div>}
     </Card>
   )
 }

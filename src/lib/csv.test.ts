@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { normaliseHeader, parseCsv, rowsToRecords } from './csv'
+import { normaliseHeader, parseCsv, rowsToRecords, staffHeaderAliases } from './csv'
 
 describe('parseCsv', () => {
   it('reads quoted fields, escaped quotes, CRLF and a BOM', () => {
@@ -40,5 +40,22 @@ describe('headers', () => {
     ])
     expect(records).toEqual([{ assessment_no: 'A1', name: 'Jane Otieno', class: 'Grade 4 Blue' }])
     expect(mapped.Fees).toBeNull()
+  })
+
+  it('reads a staff list with the staff headings', () => {
+    const { records, mapped } = rowsToRecords(
+      [
+        ['Full Name', 'User Name', 'Email Address', 'Mobile', 'TSC No', 'Roles', 'Subject'],
+        ['Grace Kamau', 'gkamau', 'grace@example.com', '0712000000', '123456', 'Teacher; Examiner', 'Maths'],
+      ],
+      staffHeaderAliases,
+    )
+    expect(records).toEqual([
+      { name: 'Grace Kamau', username: 'gkamau', email: 'grace@example.com', phone: '0712000000', tsc_no: '123456', role: 'Teacher; Examiner' },
+    ])
+    expect(mapped.Subject).toBeNull()
+    // Pupil headings are unchanged by the staff ones.
+    expect(normaliseHeader('Phone')).toBe('guardian_phone')
+    expect(normaliseHeader('Phone', staffHeaderAliases)).toBe('phone')
   })
 })

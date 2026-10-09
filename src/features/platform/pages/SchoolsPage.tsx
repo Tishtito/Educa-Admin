@@ -244,7 +244,7 @@ function CreateSchoolDialog({
 function CreatedDialog({ result, onClose }: { result: CreatedSchool | null; onClose: () => void }) {
   const [copied, setCopied] = useState(false)
   const text = result
-    ? `Educa sign-in for ${result.school.name}\nUsername: ${result.admin_username}\n${
+    ? `Elimu Pass sign-in for ${result.school.name}\nUsername: ${result.admin_username}\n${
         result.temporary_password
           ? `Temporary password: ${result.temporary_password}\nYou will be asked to choose your own password.`
           : `An invitation to choose your password was emailed to ${result.invitation_sent_to}.`

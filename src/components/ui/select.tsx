@@ -15,7 +15,7 @@ function Select({
       // Radix mirrors the value into a hidden native <select>. When options load
       // after the value is set (e.g. terms after the year), the native select
       // briefly has no matching option and Radix reports "" — which would
-      // overwrite a real default. Educa never uses "" as an option value.
+      // overwrite a real default. Elimu Pass never uses "" as an option value.
       onValueChange={onValueChange ? (value) => value !== "" && onValueChange(value) : undefined}
       {...props}
     />

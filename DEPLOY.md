@@ -1,4 +1,4 @@
-# Deploying Educa Admin
+# Deploying Elimu Pass Admin
 
 Production is **https://admin.educa.codepasstech.top**, a static build of this
 repo served by nginx on the Codepasstech VPS. There is no server process: `npm
@@ -48,7 +48,7 @@ git add -A && git commit -m "..."
 git push origin dev          # ~2 minutes to live
 ```
 
-Watch it at <https://github.com/Tishtito/Educa-Admin/actions>.
+Watch it at <https://github.com/Tishtito/Elimu Pass-Admin/actions>.
 
 `dev` is the only branch CI touches. `main` is dormant: nothing builds or
 deploys from it.
@@ -114,7 +114,7 @@ EOF
 
 Vite picks `.env.production.local` up automatically for `npm run build`, and
 leaves `.env.local` (your dev API) alone. The Google web client is the same one
-Educa Staff and the API use — one client, three origins.
+Elimu Pass Portal and the API use — one client, three origins.
 
 ### 3. Check, then build
 
@@ -221,7 +221,7 @@ Google sign-in. All of it lives in `/home/tito/educa/.env` on the same box:
 | `CORS_ALLOWED_ORIGINS` | must contain `https://admin.educa.codepasstech.top` |
 | `GOOGLE_WEB_CLIENT_ID` | must match `VITE_GOOGLE_WEB_CLIENT_ID` here |
 
-`CORS_ALLOWED_ORIGINS` is shared with Educa Staff — edit it, do not replace it,
+`CORS_ALLOWED_ORIGINS` is shared with Elimu Pass Portal — edit it, do not replace it,
 or you will take the portal offline. Current value:
 
 ```

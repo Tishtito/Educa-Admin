@@ -82,7 +82,7 @@ export function AppShell() {
           </div>
           {navigating && (
             <div className="absolute inset-x-0 bottom-0 h-0.5 overflow-hidden" role="progressbar" aria-label="Loading page">
-              <div className="h-full w-1/3 animate-[educa-progress_1s_ease-in-out_infinite] bg-primary" />
+              <div className="h-full w-1/3 animate-[elimupass-progress_1s_ease-in-out_infinite] bg-primary" />
             </div>
           )}
           <SubscriptionBanner />
@@ -125,7 +125,7 @@ function SidebarContent() {
         <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
           <GraduationCapIcon className="size-4" />
         </div>
-        <span className="font-semibold tracking-tight">Educa Admin</span>
+        <span className="font-semibold tracking-tight">Elimu Pass Admin</span>
       </div>
       <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
         {sections.map((section, index) => (

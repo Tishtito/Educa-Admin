@@ -1,6 +1,6 @@
-# Educa Admin
+# Elimu Pass Admin
 
-The administration app for **Educa**: school set-up, pupils and staff, exams,
+The administration app for **Elimu Pass**: school set-up, pupils and staff, exams,
 marking, mark lists, analysis and report cards. School administrators and
 platform superadmins use it; class teachers and examiners use the staff portal.
 
@@ -28,8 +28,8 @@ Run the API alongside it (`composer run dev` in `Educa_Lara`, which includes the
 queue worker that recomputes results and builds report card PDFs). The API only
 accepts browser requests from the origins in its `CORS_ALLOWED_ORIGINS`.
 
-Three dev servers run side by side, each on a fixed port: **5173** Educa Admin,
-**5174** Educa Staff, **5170** the API's own Vite (Laravel's welcome page).
+Three dev servers run side by side, each on a fixed port: **5173** Elimu Pass Admin,
+**5174** Elimu Pass Portal, **5170** the API's own Vite (Laravel's welcome page).
 A port clash now fails loudly instead of moving an app onto a neighbour's port.
 
 Demo sign-in after `php artisan migrate:fresh --seed` in the API:
@@ -51,7 +51,7 @@ client. Set-up, including the Android SHA-1 and the iOS URL scheme, is in
 unused. Settings → Account lists signed-in devices, and the Staff screen can sign
 someone out everywhere.
 
-**Subscription.** Each school has one Educa subscription (Educa_Lara
+**Subscription.** Each school has one Elimu Pass subscription (Educa_Lara
 `docs/billing.md`). While it has lapsed, **Exams** is blurred behind a renewal
 card and the API refuses exam work with 402. **Settings → Subscription**
 (`manage_billing`) shows the paid-until date and payments, and renews with an

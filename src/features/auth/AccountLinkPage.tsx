@@ -31,6 +31,7 @@ const roleWords: Record<string, string> = {
   school_admin: 'School administrator',
   class_teacher: 'Class teacher',
   examiner: 'Examiner',
+  teacher: 'Teacher',
   super_admin: 'Platform administrator',
 }
 
@@ -136,7 +137,7 @@ function ChoosePassword({ kind, token, details }: { kind: AccountLinkKind; token
           <CardTitle>{invitation ? `Welcome, ${details.name.split(' ')[0]}` : 'Choose a new password'}</CardTitle>
           <CardDescription>
             {invitation
-              ? `Set a password for your ${details.school?.name ?? 'Educa'} account.`
+              ? `Set a password for your ${details.school?.name ?? 'Elimu Pass'} account.`
               : `For ${details.name}${details.school ? ` at ${details.school.name}` : ''}.`}
           </CardDescription>
         </CardHeader>

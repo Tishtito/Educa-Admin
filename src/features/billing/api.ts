@@ -5,7 +5,7 @@ import type { SubscriptionPayment, SubscriptionState } from '@/lib/api/types'
 export interface BillingOverview {
   subscription: SubscriptionState
   paybill: { business_number: string | null; account_number: string }
-  /** False until Educa has set up M-Pesa on the server. */
+  /** False until Elimu Pass has set up M-Pesa on the server. */
   mpesa_available: boolean
   payments: SubscriptionPayment[]
 }
