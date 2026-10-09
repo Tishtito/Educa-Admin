@@ -12,9 +12,9 @@ export default defineConfig({
       registerType: 'prompt',
       includeAssets: ['favicon.svg', 'favicon.ico', 'apple-touch-icon-180x180.png'],
       manifest: {
-        name: 'Educa Admin',
-        short_name: 'Educa Admin',
-        description: 'School administration for Educa: exams, marks, report cards and school set-up.',
+        name: 'Elimu Pass Admin',
+        short_name: 'Elimu Pass Admin',
+        description: 'School administration for Elimu Pass: exams, marks, report cards and school set-up.',
         theme_color: '#1e3a8a',
         background_color: '#ffffff',
         display: 'standalone',

@@ -5,6 +5,7 @@ const roleLabels: Record<RoleSlug, string> = {
   school_admin: 'School admin',
   class_teacher: 'Class teacher',
   examiner: 'Examiner',
+  teacher: 'Teacher',
 }
 
 export const roleLabel = (role: RoleSlug) => roleLabels[role] ?? role

@@ -6,7 +6,30 @@ import type { Permission } from '@/lib/permissions'
  */
 
 /** The built-in roles. A school's own roles have slugs of their own, hence `string` on users. */
-export type BuiltInRole = 'super_admin' | 'school_admin' | 'class_teacher' | 'examiner'
+export type BuiltInRole = 'super_admin' | 'school_admin' | 'class_teacher' | 'examiner' | 'teacher'
+
+/** POST /staff/import: the check (dry run) or the result of creating the accounts. */
+export interface StaffImportResult {
+  total: number
+  valid: number
+  errors: { row: number; field: string; message: string }[]
+  preview: {
+    name: string | null
+    username: string
+    email: string | null
+    phone: string | null
+    staff_no: string | null
+    tsc_no: string | null
+    roles: string[]
+    role_names: string[]
+    invite: boolean
+  }[]
+  created: number
+  committed: boolean
+  invited: number
+  /** Temporary passwords, returned once, for accounts not invited by email. */
+  credentials: { name: string; username: string; temporary_password: string }[]
+}
 export type RoleSlug = BuiltInRole | (string & {})
 
 export interface School {
@@ -31,7 +54,7 @@ export interface SubscriptionState {
   days_left: number
   is_trial: boolean
   cycle_months: number | null
-  /** Null until Educa sets the school's price. */
+  /** Null until Elimu Pass sets the school's price. */
   price_kes: number | null
   credit_kes: number
   /** What renewing costs after credit; null when not priced. */
@@ -142,10 +165,22 @@ export interface Term {
   is_current: boolean
 }
 
+/** The design a report card is printed in. Not ReportLayout, which is what the card contains. */
+export type ReportTemplate = 'classic' | 'modern' | 'formal'
+
+export interface ReportTemplateOption {
+  value: ReportTemplate
+  label: string
+  description: string
+}
+
 export interface ReportCardSettings {
   head_teacher_name: string | null
   footer: string | null
   default_footer: string
+  /** The template in effect (Classic until the school chooses). */
+  template: ReportTemplate
+  templates: ReportTemplateOption[]
 }
 
 // -------------------------------------------------------------------- exams
@@ -361,6 +396,8 @@ export interface ReportTotals {
 
 export interface ReportCard {
   layout: ReportLayout
+  /** A published card keeps the template it was issued with, whatever the school has chosen since. */
+  template: ReportTemplate
   school: {
     name: string
     motto: string | null
@@ -746,7 +783,7 @@ export interface RoleSummary {
   slug: RoleSlug
   name: string
   description: string | null
-  /** Built into Educa (class teacher, examiner, school administrator) rather than made by the school. */
+  /** Built into Elimu Pass (class teacher, examiner, school administrator) rather than made by the school. */
   is_system: boolean
   /** School administrator: always every school permission, not editable. */
   is_fixed: boolean

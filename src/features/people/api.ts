@@ -7,6 +7,7 @@ import type {
   PromotionPreview,
   PromotionResult,
   RoleSlug,
+  StaffImportResult,
   StaffMember,
   Student,
   StudentResult,
@@ -63,6 +64,12 @@ export function useStaffMutations() {
     remove: useMutation({ mutationFn: (id: number) => api.delete(`/staff/${id}`), onSuccess: refresh }),
     sendInvitation: useMutation({ mutationFn: (id: number) => api.post<StaffMember>(`/staff/${id}/invitation`), onSuccess: refresh }),
     cancelInvitation: useMutation({ mutationFn: (id: number) => api.delete<StaffMember>(`/staff/${id}/invitation`), onSuccess: refresh }),
+    importRows: useMutation({
+      mutationFn: (input: { rows: Record<string, string>[]; dry_run: boolean; send_invitation: boolean }) =>
+        api.post<StaffImportResult>('/staff/import', input),
+      meta: silent,
+      onSuccess: (result) => result.committed && refresh(),
+    }),
   }
 }
 

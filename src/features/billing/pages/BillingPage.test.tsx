@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AuthContext, type AuthContextValue } from '@/auth/context'
@@ -10,7 +10,7 @@ import { BillingPage } from './BillingPage'
  * a webhook seconds later, and the dialog polls until it does.
  */
 describe('BillingPage: paying with M-Pesa', () => {
-  const overview = (amountDue: number | null = 10) => ({
+  const overview = (amountDue: number | null = 10, payments: unknown[] = []) => ({
     data: {
       subscription: {
         status: 'overdue', paid_until: '2026-09-17', days_left: 0, is_trial: false,
@@ -18,7 +18,7 @@ describe('BillingPage: paying with M-Pesa', () => {
       },
       paybill: { business_number: '174379', account_number: 'gatimu' },
       mpesa_available: true,
-      payments: [],
+      payments,
     },
   })
 
@@ -100,4 +100,41 @@ describe('BillingPage: paying with M-Pesa', () => {
     expect(screen.getByText(/Request Cancelled by user/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument()
   }, 20_000)
+
+  /**
+   * The history renders twice - cards below `md`, the table above it - and only CSS
+   * hides one, so every assertion here is scoped to the rendering it is about.
+   */
+  it('lists past payments as both cards and a table', async () => {
+    const paid = {
+      id: 1, method: 'stk', status: 'succeeded', amount_kes: 1200, mpesa_receipt: 'UII1F76IAB', reference: null,
+      phone: '2547*****149', result_desc: null, paid_at: '2026-03-12T11:32:00+00:00',
+      paid_until_after: '2027-01-17', cycles_added: 1, created_at: '2026-03-12T11:31:00+00:00',
+    }
+    const failed = {
+      id: 2, method: 'paybill', status: 'failed', amount_kes: 500, mpesa_receipt: null, reference: 'GATIMU',
+      phone: null, result_desc: 'Request Cancelled by user.', paid_at: null,
+      paid_until_after: null, cycles_added: 0, created_at: '2026-03-11T09:00:00+00:00',
+    }
+
+    vi.spyOn(globalThis, 'fetch').mockImplementation((input) => {
+      if (String(input).endsWith('/billing')) return json(overview(10, [paid, failed]))
+      throw new Error(`unexpected request: ${String(input)}`)
+    })
+
+    renderPage()
+
+    const table = within(await screen.findByRole('table'))
+    expect(table.getByText('UII1F76IAB')).toBeInTheDocument()
+    expect(table.getByText('17 Jan 2027')).toBeInTheDocument()
+    expect(table.getByText('Paid')).toBeInTheDocument()
+    expect(table.getByText('Failed')).toBeInTheDocument()
+
+    const cards = within(screen.getByRole('region', { name: 'Payments' }))
+    expect(cards.getByText('Receipt UII1F76IAB')).toBeInTheDocument()
+    expect(cards.getByText('Paid until 17 Jan 2027')).toBeInTheDocument()
+    expect(cards.getByText(/Request Cancelled by user/)).toBeInTheDocument()
+    // The amount and its status are on the same card, which is the point of the change.
+    expect(cards.getByText('Paid')).toBeInTheDocument()
+  })
 })

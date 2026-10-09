@@ -89,11 +89,16 @@ export const router = createBrowserRouter([
                   { element: <RequirePermission permission="promote_students" />, children: [{ path: '/students/promotion', ...page(() => import('@/features/people/pages/PromotionPage'), 'PromotionPage') }] },
                   { element: <RequirePermission permission="view_students" />, children: [{ path: '/students/:studentId', ...page(() => import('@/features/people/pages/StudentDetailPage'), 'StudentDetailPage') }] },
                   { element: <RequirePermission permission="view_staff" />, children: [{ path: '/staff', ...page(() => import('@/features/people/pages/StaffPage'), 'StaffPage') }] },
+                  { element: <RequirePermission permission="create_staff" />, children: [{ path: '/staff/import', ...page(() => import('@/features/people/pages/StaffImportPage'), 'StaffImportPage') }] },
                   { element: <RequirePermission permission="manage_assignments" />, children: [{ path: '/assignments', ...page(() => import('@/features/people/pages/AssignmentsPage'), 'AssignmentsPage') }] },
-                  // Exams and everything in them lock while the subscription has lapsed.
+                  // Exams, timetables and everything in them lock while the subscription has lapsed.
                   {
                     element: <SubscriptionLockedRoutes />,
                     children: [
+                      {
+                        element: <RequirePermission permission={['manage_timetables', 'view_timetables']} />,
+                        children: [{ path: '/timetable', ...page(() => import('@/features/timetable/pages/TimetablePage'), 'TimetablePage') }],
+                      },
                       { path: '/exams', ...page(() => import('@/features/exams/pages/ExamsListPage'), 'ExamsListPage') },
                       { element: <RequirePermission permission="create_exams" />, children: [{ path: '/exams/new', ...page(() => import('@/features/exams/pages/ExamCreatePage'), 'ExamCreatePage') }] },
                       {

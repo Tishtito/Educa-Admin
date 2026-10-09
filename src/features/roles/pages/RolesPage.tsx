@@ -134,7 +134,7 @@ function RoleEditor({ role, groups, onDeleted }: { role: RoleSummary; groups: Pe
                   </Button>
                 }
                 title={`Put ${role.name} back to the defaults?`}
-                description="It gets Educa’s standard permissions for this role again. Your changes are lost."
+                description="It gets Elimu Pass’s standard permissions for this role again. Your changes are lost."
                 confirmLabel="Reset"
                 onConfirm={() => reset.mutateAsync(role.id).then(() => toast.success(`${role.name} is back to the defaults.`))}
               />

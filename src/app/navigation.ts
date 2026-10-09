@@ -4,6 +4,7 @@ import {
   BookOpenIcon,
   Building2Icon,
   CalendarDaysIcon,
+  CalendarRangeIcon,
   ClipboardListIcon,
   ContactIcon,
   IdCardIcon,
@@ -42,6 +43,7 @@ export const navigation: NavSection[] = [
     items: [
       { to: '/', label: 'Dashboard', icon: LayoutDashboardIcon, permissions: ['view_dashboard'], tenant: true, primary: true, end: true },
       { to: '/exams', label: 'Exams', icon: ClipboardListIcon, permissions: EXAM_WORK, tenant: true, primary: true },
+      { to: '/timetable', label: 'Timetable', icon: CalendarRangeIcon, permissions: ['manage_timetables', 'view_timetables'], tenant: true },
     ],
   },
   {

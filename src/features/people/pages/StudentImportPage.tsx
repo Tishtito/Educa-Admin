@@ -125,7 +125,7 @@ export function StudentImportPage() {
             <Button onClick={() => input.current?.click()} disabled={importRows.isPending || !year.current}>
               <UploadIcon /> Choose CSV file
             </Button>
-            <Button variant="outline" onClick={() => void saveBlob(new Blob([TEMPLATE], { type: 'text/csv' }), 'educa-pupils-template.csv')}>
+            <Button variant="outline" onClick={() => void saveBlob(new Blob([TEMPLATE], { type: 'text/csv' }), 'elimupass-pupils-template.csv')}>
               <DownloadIcon /> Download a template
             </Button>
             <p className="text-xs text-muted-foreground">In Excel or Google Sheets use File → Save as / Download → CSV.</p>

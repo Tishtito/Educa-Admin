@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { CheckIcon, CopyIcon, KeyRoundIcon, LogOutIcon, MailIcon, MailXIcon, MoreHorizontalIcon, PencilIcon, SearchIcon, Trash2Icon, UserPlusIcon, UserXIcon } from 'lucide-react'
+import { Link } from 'react-router'
+import { CheckIcon, CopyIcon, KeyRoundIcon, LogOutIcon, MailIcon, MailXIcon, MoreHorizontalIcon, PencilIcon, SearchIcon, Trash2Icon, UploadIcon, UserPlusIcon, UserXIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '@/auth/useAuth'
 import { ConfirmDialog } from '@/components/data/ConfirmDialog'
@@ -45,6 +46,7 @@ const BUILT_IN: { slug: RoleSlug; name: string; description: string }[] = [
   { slug: 'school_admin', name: 'School Administrator', description: 'Everything in this app: set-up, exams, staff and pupils.' },
   { slug: 'class_teacher', name: 'Class Teacher', description: 'Their class’s pupils, mark list and report card remarks.' },
   { slug: 'examiner', name: 'Examiner', description: 'Enters marks for the subjects and classes they are given.' },
+  { slug: 'teacher', name: 'Teacher', description: 'Teaches subjects; sees their own timetable in the staff portal.' },
 ]
 
 /** The roles this school can give: built-in ones and its own, from the roles screen's list when allowed. */
@@ -56,6 +58,7 @@ function useAssignableRoles() {
 const ALL = 'all'
 
 export function StaffPage() {
+  const { can } = useAuth()
   const staff = useStaff()
   const [search, setSearch] = useState('')
   const [role, setRole] = useState<string>(ALL)
@@ -67,11 +70,20 @@ export function StaffPage() {
     <>
       <PageHeader
         title="Staff"
-        description="Accounts for administrators, class teachers and examiners. Invite people by email to choose their own password, or give them a temporary password to change at first sign-in."
+        description="Accounts for administrators, teachers, class teachers and examiners. Invite people by email to choose their own password, or give them a temporary password to change at first sign-in."
         actions={
-          <Button onClick={() => setEditing('new')}>
-            <UserPlusIcon /> New account
-          </Button>
+          <>
+            {can('create_staff') && (
+              <Button variant="outline" asChild>
+                <Link to="/staff/import">
+                  <UploadIcon /> Import from CSV
+                </Link>
+              </Button>
+            )}
+            <Button onClick={() => setEditing('new')}>
+              <UserPlusIcon /> New account
+            </Button>
+          </>
         }
       />
       <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -388,7 +400,7 @@ function StaffDialog({
       phone: member?.phone ?? '',
       staff_no: member?.staff_no ?? '',
       tsc_no: member?.tsc_no ?? '',
-      roles: member?.roles.filter((r) => r !== 'super_admin') ?? ['class_teacher'],
+      roles: member?.roles.filter((r) => r !== 'super_admin') ?? ['teacher'],
       send_invitation: false,
     },
   })
@@ -434,7 +446,7 @@ function StaffDialog({
           })}
         />
       </Field>
-      <Field label="Username" htmlFor="staff-username" error={errors.username?.message} hint="What they type to sign in. It must be free across every school on Educa.">
+      <Field label="Username" htmlFor="staff-username" error={errors.username?.message} hint="What they type to sign in. It must be free across every school on Elimu Pass.">
         <Input id="staff-username" autoCapitalize="none" {...form.register('username', { onChange: () => setUsernameTouched(true) })} />
       </Field>
       <Field label="Roles" error={errors.roles?.message}>
@@ -508,7 +520,7 @@ function StaffDialog({
 function CredentialsDialog({ credentials, onClose }: { credentials: { name: string; username: string; password: string } | null; onClose: () => void }) {
   const [copied, setCopied] = useState(false)
   const text = credentials
-    ? `Educa sign-in for ${credentials.name}\nUsername: ${credentials.username}\nTemporary password: ${credentials.password}\nYou will be asked to choose your own password.`
+    ? `Elimu Pass sign-in for ${credentials.name}\nUsername: ${credentials.username}\nTemporary password: ${credentials.password}\nYou will be asked to choose your own password.`
     : ''
 
   return (

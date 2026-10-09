@@ -5,7 +5,7 @@ import { googleAvailable, googleIdToken } from '@/lib/google'
 
 /**
  * "Continue with Google". Renders nothing when this build has no Google client
- * configured. onIdToken does the Educa side and reports its own errors; a
+ * configured. onIdToken does the Elimu Pass side and reports its own errors; a
  * failure to reach Google is passed to onError.
  */
 export function GoogleButton({

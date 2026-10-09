@@ -11,7 +11,7 @@ import { errorMessage } from '@/lib/api/errors'
 import { formatDate, formatRelative } from '@/lib/format'
 import { disconnectGoogle, useSessionMutations, useSessions, type SignedInSession } from './api'
 
-const appNames = { admin: 'Educa Admin', portal: 'Educa Staff' } as const
+const appNames = { admin: 'Elimu Pass Admin', portal: 'Elimu Pass Portal' } as const
 
 const methodNames = {
   password: 'password',
@@ -137,22 +137,24 @@ function SessionRow({ session, onSignOut }: { session: SignedInSession; onSignOu
   ].filter(Boolean)
 
   return (
-    <li className="flex items-center gap-3 p-3">
-      <Icon className="size-4 shrink-0 text-muted-foreground" />
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2 font-medium">
-          {session.device_name}
-          {session.is_current && <Badge variant="secondary">This device</Badge>}
+    <li className="flex flex-col items-start gap-2 p-3 sm:flex-row sm:items-center sm:gap-3">
+      <div className="flex w-full min-w-0 items-start gap-3">
+        <Icon className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2 font-medium">
+            {session.device_name}
+            {session.is_current && <Badge variant="secondary">This device</Badge>}
+          </div>
+          <div className="text-xs break-words text-muted-foreground">{details.join(' · ')}</div>
+          {!session.is_current && (
+            <div className="text-xs text-muted-foreground">Last active {formatRelative(session.last_used_at ?? session.signed_in_at)}</div>
+          )}
         </div>
-        <div className="truncate text-xs text-muted-foreground">{details.join(' · ')}</div>
-        {!session.is_current && (
-          <div className="text-xs text-muted-foreground">Last active {formatRelative(session.last_used_at ?? session.signed_in_at)}</div>
-        )}
       </div>
       {!session.is_current && (
         <ConfirmDialog
           trigger={
-            <Button variant="ghost" size="sm">
+            <Button variant="ghost" size="sm" className="self-end sm:self-auto">
               Sign out
             </Button>
           }

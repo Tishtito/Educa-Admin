@@ -18,7 +18,7 @@ export function RequireAuth() {
         <WifiOffIcon className="size-10 text-muted-foreground" />
         <div>
           <p className="font-medium">You are offline</p>
-          <p className="text-sm text-muted-foreground">Educa needs a connection to load school data.</p>
+          <p className="text-sm text-muted-foreground">Elimu Pass needs a connection to load school data.</p>
         </div>
         <Button onClick={() => void refresh()}>Try again</Button>
       </div>
