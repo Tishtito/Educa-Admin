@@ -61,7 +61,7 @@ function StatusCard({ data }: { data: BillingOverview }) {
           Elimu Pass subscription <Badge variant={badge.variant}>{badge.label}</Badge>
         </CardTitle>
         <CardDescription>
-          Exams, marking, mark lists and report cards need an active subscription. Pupils, staff and set-up are always available.
+          Exams, marking, mark lists, report cards, timetables and teaching materials need an active subscription. Pupils, staff and set-up are always available.
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">

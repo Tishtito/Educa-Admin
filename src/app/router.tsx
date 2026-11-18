@@ -96,6 +96,10 @@ export const router = createBrowserRouter([
                     element: <SubscriptionLockedRoutes />,
                     children: [
                       {
+                        element: <RequirePermission permission="manage_teaching_materials" />,
+                        children: [{ path: '/materials', ...page(() => import('@/features/materials/pages/MaterialsPage'), 'MaterialsPage') }],
+                      },
+                      {
                         element: <RequirePermission permission={['manage_timetables', 'view_timetables']} />,
                         children: [{ path: '/timetable', ...page(() => import('@/features/timetable/pages/TimetablePage'), 'TimetablePage') }],
                       },
