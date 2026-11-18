@@ -797,3 +797,40 @@ export interface PermissionGroup {
   group: string
   permissions: { slug: Permission; name: string; description: string }[]
 }
+
+// --- Teaching materials (Educa_Lara docs/teaching-materials.md) ---
+
+export type MaterialStatus = 'draft' | 'published'
+
+export interface TeachingMaterial {
+  id: number
+  uuid: string
+  title: string
+  description: string | null
+  level_id: number
+  level?: { id: number; code: Level['code']; name: string }
+  /** Empty = the whole section. */
+  grades?: { id: number; code: string; name: string }[]
+  level_subject_id: number | null
+  subject?: { id: number; name: string; code: string } | null
+  original_name: string
+  extension: string
+  mime_type: string
+  size_bytes: number
+  status: MaterialStatus
+  published_at: string | null
+  is_new: boolean
+  uploaded_by?: { id: number; name: string } | null
+  created_at: string | null
+  updated_at: string | null
+  deleted_at: string | null
+}
+
+export interface MaterialSummaryLevel {
+  id: number
+  code: Level['code']
+  name: string
+  count: number
+  drafts: number | null
+  grades: { id: number; code: string; name: string; count: number }[]
+}

@@ -39,6 +39,8 @@ export const PERMISSIONS = [
   'manage_timetables',
   'view_timetables',
   'view_own_timetable',
+  'manage_teaching_materials',
+  'view_teaching_materials',
   'view_staff',
   'create_staff',
   'update_staff',

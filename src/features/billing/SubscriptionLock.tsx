@@ -69,7 +69,7 @@ function LockedCard({ subscription }: { subscription: SubscriptionState }) {
         </CardTitle>
         <CardDescription>
           {subscription.paid_until ? `It ended on ${formatDate(subscription.paid_until)}. ` : ''}
-          Exams, marking, mark lists and report cards are locked until it is renewed. Nothing has been deleted.
+          Exams, marking, mark lists, report cards, timetables and teaching materials are locked until it is renewed. Nothing has been deleted.
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-2">

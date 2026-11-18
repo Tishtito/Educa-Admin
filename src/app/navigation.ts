@@ -12,6 +12,7 @@ import {
   WalletIcon,
   GaugeIcon,
   LayoutDashboardIcon,
+  LibraryIcon,
   SchoolIcon,
   SettingsIcon,
 } from 'lucide-react'
@@ -52,6 +53,12 @@ export const navigation: NavSection[] = [
       { to: '/students', label: 'Pupils', icon: UsersIcon, permissions: ['view_students'], tenant: true, primary: true },
       { to: '/staff', label: 'Staff', icon: IdCardIcon, permissions: ['view_staff'], tenant: true },
       { to: '/assignments', label: 'Assignments', icon: ContactIcon, permissions: ['manage_assignments'], tenant: true },
+    ],
+  },
+  {
+    label: 'Teaching',
+    items: [
+      { to: '/materials', label: 'Teaching materials', icon: LibraryIcon, permissions: ['manage_teaching_materials'], tenant: true },
     ],
   },
   {
