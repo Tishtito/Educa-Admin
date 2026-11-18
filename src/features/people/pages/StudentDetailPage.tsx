@@ -46,12 +46,14 @@ function StudentProfile({ student }: { student: Student }) {
   const current = student.enrolments?.find((e) => e.academic_year_id === currentYearId)
 
   const details: [string, string | null][] = [
-    ['Admission no.', student.admission_no],
+    ['Assessment no.', student.assessment_no],
     ['UPI', student.upi],
     ['Gender', student.gender ? student.gender[0].toUpperCase() + student.gender.slice(1) : null],
     ['Date of birth', student.date_of_birth ? formatDate(student.date_of_birth) : null],
     ['Guardian', student.guardian_name],
     ['Guardian phone', student.guardian_phone],
+    // When this year's enrolment began: the day they joined the class.
+    ['Joined', current?.started_on ? formatDate(current.started_on) : null],
   ]
 
   return (

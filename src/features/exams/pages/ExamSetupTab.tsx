@@ -265,23 +265,67 @@ function DetailsCard({ exam }: { exam: Exam }) {
 
 // -------------------------------------------------------------- subjects
 
+/** level_subject_id => the papers this exam sets for it. */
+type Chosen = Record<number, number[]>
+
+const chosenFrom = (setup: ExamSetup): Chosen =>
+  Object.fromEntries(
+    setup.subjects.map((subject) => [subject.level_subject_id, subject.selected ? subject.papers.filter((p) => p.selected).map((p) => p.subject_paper_id) : []]),
+  )
+
+const defaultPapers = (subject: ExamSetup['subjects'][number]) =>
+  subject.aggregation_rule === 'single' ? subject.papers.slice(0, 1).map((p) => p.subject_paper_id) : subject.papers.map((p) => p.subject_paper_id)
+
+/** A one-paper subject swaps its paper rather than adding a second. */
+function togglePaper(papers: number[], subject: ExamSetup['subjects'][number], paperId: number, on: boolean): number[] {
+  if (!on) return papers.filter((id) => id !== paperId)
+  if (subject.aggregation_rule === 'single') return [paperId]
+  return [...subject.papers.filter((p) => papers.includes(p.subject_paper_id) || p.subject_paper_id === paperId).map((p) => p.subject_paper_id)]
+}
+
+/** The same rules the API enforces, said before the request goes out. */
+function firstProblem(setup: ExamSetup, chosen: Chosen): string | null {
+  if (!Object.values(chosen).some((papers) => papers.length > 0)) return 'Choose at least one subject.'
+
+  for (const subject of setup.subjects) {
+    const papers = chosen[subject.level_subject_id] ?? []
+    if (papers.length === 0) continue
+    if (subject.aggregation_rule === 'single' && papers.length > 1) {
+      return `${subject.name} is a one-paper subject, so this exam can set only one of its papers.`
+    }
+  }
+
+  return null
+}
+
 function SubjectsCard({ exam, setup }: { exam: Exam; setup: ExamSetup }) {
   const { chooseSubjects } = useExamSetupMutations(exam.id)
   const levels = useLevels()
-  const initial = setup.subjects.filter((s) => s.selected).map((s) => s.level_subject_id)
-  const [chosen, setChosen] = useState<number[]>(initial)
+  const [chosen, setChosen] = useState<Chosen>(() => chosenFrom(setup))
   const [baseline, setBaseline] = useState(setup)
   if (baseline !== setup) {
     setBaseline(setup)
-    setChosen(initial)
+    setChosen(chosenFrom(setup))
   }
-  const dirty = chosen.length !== initial.length || chosen.some((id) => !initial.includes(id))
+  const dirty = JSON.stringify(chosen) !== JSON.stringify(chosenFrom(setup))
   const byLevel = new Map<number, ExamSetup['subjects']>()
   for (const subject of setup.subjects) byLevel.set(subject.level_id, [...(byLevel.get(subject.level_id) ?? []), subject])
 
+  const problem = firstProblem(setup, chosen)
+
   async function save() {
     try {
-      await chooseSubjects.mutateAsync(chosen)
+      await chooseSubjects.mutateAsync(
+        setup.subjects
+          .filter((subject) => chosen[subject.level_subject_id]?.length)
+          .map((subject) => ({
+            level_subject_id: subject.level_subject_id,
+            papers: chosen[subject.level_subject_id].map((paperId) => ({
+              subject_paper_id: paperId,
+              max_marks: subject.papers.find((p) => p.subject_paper_id === paperId)?.max_marks ?? null,
+            })),
+          })),
+      )
       toast.success('Subjects saved.')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not save the subjects.')
@@ -291,11 +335,11 @@ function SubjectsCard({ exam, setup }: { exam: Exam; setup: ExamSetup }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Subjects</CardTitle>
+        <CardTitle className="text-base">Subjects and papers</CardTitle>
         <CardDescription>
           {setup.uses_defaults && setup.editable
-            ? 'Every active subject at these classes’ levels is examined unless you choose otherwise.'
-            : 'The subjects this exam examines, with marks-out-of for each paper.'}
+            ? 'Every active subject at these classes’ levels is examined, with all of its papers, unless you choose otherwise.'
+            : 'What this exam examines. Papers are chosen per exam, so this exam can set fewer papers than the subject allows.'}
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
@@ -306,40 +350,89 @@ function SubjectsCard({ exam, setup }: { exam: Exam; setup: ExamSetup }) {
           <div key={levelId} className="grid gap-2">
             {byLevel.size > 1 && <div className="text-sm font-medium">{levels.data?.find((l) => l.id === levelId)?.name}</div>}
             <ul className="divide-y rounded-lg border">
-              {subjects.map((subject) => (
-                <li key={subject.level_subject_id} className="flex flex-wrap items-center gap-3 px-3 py-2 text-sm">
-                  <Checkbox
-                    aria-label={`Examine ${subject.name}`}
-                    disabled={!setup.editable}
-                    checked={chosen.includes(subject.level_subject_id)}
-                    onCheckedChange={(checked) =>
-                      setChosen((current) => (checked ? [...current, subject.level_subject_id] : current.filter((id) => id !== subject.level_subject_id)))
-                    }
-                  />
-                  <span className="min-w-40 flex-1">
-                    {subject.name} <span className="text-xs text-muted-foreground">{subject.code}</span>
-                    {!subject.is_active && <span className="ml-2 text-xs text-muted-foreground">(inactive)</span>}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {subject.papers
-                      .map((p) => `${p.name} /${formatScore(p.max_marks ?? p.default_max_marks ?? 100)}`)
-                      .join(' · ')}
-                  </span>
-                </li>
-              ))}
+              {subjects.map((subject) => {
+                const papers = chosen[subject.level_subject_id] ?? []
+                const examined = papers.length > 0
+
+                return (
+                  <li key={subject.level_subject_id} className="grid gap-2 px-3 py-2 text-sm">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Checkbox
+                        aria-label={`Examine ${subject.name}`}
+                        disabled={!setup.editable}
+                        checked={examined}
+                        onCheckedChange={(checked) =>
+                          setChosen((current) => ({
+                            ...current,
+                            [subject.level_subject_id]: checked ? defaultPapers(subject) : [],
+                          }))
+                        }
+                      />
+                      <span className="min-w-40 flex-1">
+                        {subject.name} <span className="text-xs text-muted-foreground">{subject.code}</span>
+                        {!subject.is_active && <span className="ml-2 text-xs text-muted-foreground">(inactive)</span>}
+                      </span>
+                      {!examined && (
+                        <span className="text-xs text-muted-foreground">
+                          {subject.papers.map((p) => p.name).join(' · ')}
+                        </span>
+                      )}
+                    </div>
+
+                    {examined && (
+                      <div className="ml-7 flex flex-wrap items-center gap-x-4 gap-y-2">
+                        {subject.papers.map((paper) => {
+                          const on = papers.includes(paper.subject_paper_id)
+                          const only = subject.papers.length === 1
+
+                          return (
+                            <label key={paper.subject_paper_id} className="flex items-center gap-2 text-xs">
+                              <Checkbox
+                                aria-label={`${subject.name}: ${paper.name}`}
+                                disabled={!setup.editable || only}
+                                checked={on}
+                                onCheckedChange={(checked) =>
+                                  setChosen((current) => ({
+                                    ...current,
+                                    [subject.level_subject_id]: togglePaper(current[subject.level_subject_id] ?? [], subject, paper.subject_paper_id, !!checked),
+                                  }))
+                                }
+                              />
+                              <span className={on ? '' : 'text-muted-foreground'}>
+                                {paper.name} <span className="text-muted-foreground">/{formatScore(paper.max_marks ?? paper.default_max_marks ?? 100)}</span>
+                              </span>
+                            </label>
+                          )
+                        })}
+                        {subject.papers.length > 1 && (
+                          <span className="text-xs text-muted-foreground">
+                            {papers.length} of {subject.papers.length} papers · {subject.aggregation_rule_label.toLowerCase()}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           </div>
         ))}
+        {problem && <p className="text-xs text-destructive">{problem}</p>}
+        {setup.editable && (
+          <p className="text-xs text-muted-foreground">
+            Marks-out-of come from the subject’s set-up; change one for this exam from its marksheet, once marking is open.
+          </p>
+        )}
         {!setup.editable && exam.status !== 'draft' && (
           <p className="text-xs text-muted-foreground">Change marks-out-of for a paper from its marksheet, before marking is locked.</p>
         )}
       </CardContent>
       {setup.editable && setup.subjects.length > 0 && (
         <CardFooter className="justify-end gap-2">
-          <Button variant="ghost" disabled={!dirty || chooseSubjects.isPending} onClick={() => setChosen(initial)}>
+          <Button variant="ghost" disabled={!dirty || chooseSubjects.isPending} onClick={() => setChosen(chosenFrom(setup))}>
             Discard
           </Button>
-          <Button disabled={!dirty || chosen.length === 0 || chooseSubjects.isPending} onClick={() => void save()}>
+          <Button disabled={!dirty || !!problem || chooseSubjects.isPending} onClick={() => void save()}>
             {chooseSubjects.isPending ? <Loader2Icon className="animate-spin" /> : <SaveIcon />}
             Save subjects
           </Button>

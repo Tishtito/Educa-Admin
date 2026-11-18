@@ -1,9 +1,36 @@
+import type { Permission } from '@/lib/permissions'
+
 /**
  * TypeScript mirrors of the Educa_Lara JSON responses. The Laravel resources
  * and controllers are the authority; keep these in step with them.
  */
 
-export type RoleSlug = 'super_admin' | 'school_admin' | 'class_teacher' | 'examiner'
+/** The built-in roles. A school's own roles have slugs of their own, hence `string` on users. */
+export type BuiltInRole = 'super_admin' | 'school_admin' | 'class_teacher' | 'examiner' | 'teacher'
+
+/** POST /staff/import: the check (dry run) or the result of creating the accounts. */
+export interface StaffImportResult {
+  total: number
+  valid: number
+  errors: { row: number; field: string; message: string }[]
+  preview: {
+    name: string | null
+    username: string
+    email: string | null
+    phone: string | null
+    staff_no: string | null
+    tsc_no: string | null
+    roles: string[]
+    role_names: string[]
+    invite: boolean
+  }[]
+  created: number
+  committed: boolean
+  invited: number
+  /** Temporary passwords, returned once, for accounts not invited by email. */
+  credentials: { name: string; username: string; temporary_password: string }[]
+}
+export type RoleSlug = BuiltInRole | (string & {})
 
 export interface School {
   uuid: string
@@ -14,6 +41,40 @@ export interface School {
   logo_path: string | null
   timezone: string
   status: 'onboarding' | 'active' | 'suspended'
+  /** Whether exams, marking, mark lists and report cards are open (Educa_Lara docs/billing.md). */
+  subscription?: SubscriptionState
+}
+
+export interface SubscriptionState {
+  /** overdue: the subscription features are locked (the API answers 402). */
+  status: 'trial' | 'active' | 'overdue'
+  /** The last day it is paid for, inclusive. */
+  paid_until: string | null
+  /** Days of use left counting today; 0 once lapsed. */
+  days_left: number
+  is_trial: boolean
+  cycle_months: number | null
+  /** Null until Elimu Pass sets the school's price. */
+  price_kes: number | null
+  credit_kes: number
+  /** What renewing costs after credit; null when not priced. */
+  amount_due_kes: number | null
+}
+
+export interface SubscriptionPayment {
+  id: number
+  method: 'stk' | 'paybill' | 'manual'
+  status: 'pending' | 'succeeded' | 'failed' | 'unmatched'
+  amount_kes: number
+  mpesa_receipt: string | null
+  reference: string | null
+  /** Masked, e.g. 2547*****678. */
+  phone: string | null
+  result_desc: string | null
+  paid_at: string | null
+  paid_until_after: string | null
+  cycles_added: number
+  created_at: string
 }
 
 export interface User {
@@ -27,8 +88,13 @@ export interface User {
   is_active: boolean
   must_change_password: boolean
   last_login_at: string | null
+  /** Whether Continue with Google signs in to this account. */
+  google_connected: boolean
   is_platform_admin: boolean
   roles: RoleSlug[]
+  role_names: string[]
+  /** What this person may do in the school (docs/permissions.md). The API enforces it regardless. */
+  permissions: Permission[]
   school: School | null
 }
 
@@ -99,10 +165,22 @@ export interface Term {
   is_current: boolean
 }
 
+/** The design a report card is printed in. Not ReportLayout, which is what the card contains. */
+export type ReportTemplate = 'classic' | 'modern' | 'formal'
+
+export interface ReportTemplateOption {
+  value: ReportTemplate
+  label: string
+  description: string
+}
+
 export interface ReportCardSettings {
   head_teacher_name: string | null
   footer: string | null
   default_footer: string
+  /** The template in effect (Classic until the school chooses). */
+  template: ReportTemplate
+  templates: ReportTemplateOption[]
 }
 
 // -------------------------------------------------------------------- exams
@@ -195,7 +273,7 @@ export interface MarksheetMark {
 export interface MarksheetStudent {
   enrolment_id: number
   student_id: number
-  admission_no: string | null
+  assessment_no: string | null
   name: string
   marks: MarksheetMark[]
   subject_score: number | null
@@ -256,7 +334,7 @@ export interface MarklistScore {
 
 export interface MarklistStudent {
   student_id: number
-  admission_no: string | null
+  assessment_no: string | null
   name: string
   total_marks: number | null
   mean_marks: number | null
@@ -318,6 +396,8 @@ export interface ReportTotals {
 
 export interface ReportCard {
   layout: ReportLayout
+  /** A published card keeps the template it was issued with, whatever the school has chosen since. */
+  template: ReportTemplate
   school: {
     name: string
     motto: string | null
@@ -334,7 +414,7 @@ export interface ReportCard {
   head_teacher: string | null
   footer: string | null
   generated_at: string
-  student: { student_id: number; enrolment_id: number; admission_no: string | null; name: string }
+  student: { student_id: number; enrolment_id: number; assessment_no: string | null; name: string }
   rows: ReportRow[]
   totals: ReportTotals[]
   entry: { class_teacher_remarks: string | null; fee_balance: number | null }
@@ -346,7 +426,7 @@ export interface ReportCard {
 export interface ReportEntryRow {
   enrolment_id: number
   student_id: number
-  admission_no: string | null
+  assessment_no: string | null
   name: string
   class_teacher_remarks: string | null
   fee_balance: number | null
@@ -475,8 +555,21 @@ export interface ExamSetup {
     code: string
     is_active: boolean
     selected: boolean
-    papers: { subject_paper_id: number; name: string; default_max_marks: number | null; max_marks: number | null }[]
+    /** How this subject's papers combine. 'single' means an exam sets exactly one of them. */
+    aggregation_rule: AggregationRule
+    aggregation_rule_label: string
+    papers: ExamSetupPaper[]
   }[]
+}
+
+export interface ExamSetupPaper {
+  subject_paper_id: number
+  name: string
+  sequence: number
+  /** Whether this exam sets the paper. Papers are chosen per exam, not per subject. */
+  selected: boolean
+  default_max_marks: number | null
+  max_marks: number | null
 }
 
 // ---------------------------------------------------------------- people
@@ -492,7 +585,13 @@ export interface StaffMember {
   is_active: boolean
   must_change_password: boolean
   last_login_at: string | null
+  /** The last time any of the account's sessions was used. */
+  last_active_at?: string | null
+  google_connected: boolean
   roles: RoleSlug[]
+  role_names: string[]
+  /** What the account may do, used to offer only suitable people for assignments. */
+  permissions: Permission[]
   class_teacher_of: { class_id: number; class_name: string | null }[]
   examiner_assignments_count: number
   /** An emailed set-up link not yet used or cancelled. */
@@ -533,7 +632,7 @@ export type StudentStatus = 'active' | 'transferred' | 'graduated' | 'inactive'
 
 export interface Student {
   id: number
-  admission_no: string
+  assessment_no: string
   upi: string | null
   first_name: string
   middle_name: string | null
@@ -633,7 +732,7 @@ export interface StreamList {
   subjects: { level_subject_id: number; name: string; code: string }[]
   students: {
     student_id: number
-    admission_no: string | null
+    assessment_no: string | null
     name: string
     class_id: number
     class_name: string
@@ -675,4 +774,63 @@ export interface SchoolProfile {
   email: string | null
   has_logo: boolean
   status: School['status']
+}
+
+// ---------------------------------------------------------------- roles
+
+export interface RoleSummary {
+  id: number
+  slug: RoleSlug
+  name: string
+  description: string | null
+  /** Built into Elimu Pass (class teacher, examiner, school administrator) rather than made by the school. */
+  is_system: boolean
+  /** School administrator: always every school permission, not editable. */
+  is_fixed: boolean
+  /** A built-in role this school has changed from the defaults. */
+  is_customised: boolean
+  users_count: number
+  permissions: Permission[]
+}
+
+export interface PermissionGroup {
+  group: string
+  permissions: { slug: Permission; name: string; description: string }[]
+}
+
+// --- Teaching materials (Educa_Lara docs/teaching-materials.md) ---
+
+export type MaterialStatus = 'draft' | 'published'
+
+export interface TeachingMaterial {
+  id: number
+  uuid: string
+  title: string
+  description: string | null
+  level_id: number
+  level?: { id: number; code: Level['code']; name: string }
+  /** Empty = the whole section. */
+  grades?: { id: number; code: string; name: string }[]
+  level_subject_id: number | null
+  subject?: { id: number; name: string; code: string } | null
+  original_name: string
+  extension: string
+  mime_type: string
+  size_bytes: number
+  status: MaterialStatus
+  published_at: string | null
+  is_new: boolean
+  uploaded_by?: { id: number; name: string } | null
+  created_at: string | null
+  updated_at: string | null
+  deleted_at: string | null
+}
+
+export interface MaterialSummaryLevel {
+  id: number
+  code: Level['code']
+  name: string
+  count: number
+  drafts: number | null
+  grades: { id: number; code: string; name: string; count: number }[]
 }

@@ -12,7 +12,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { ApiError, errorMessage } from '@/lib/api/errors'
+import { googleAvailable } from '@/lib/google'
 import { AuthLayout } from '../AuthLayout'
+import { GoogleButton, OrDivider } from '../GoogleButton'
 
 const schema = z.object({
   identity: z.string().trim().min(1, 'Enter your username or email address'),
@@ -22,7 +24,7 @@ const schema = z.object({
 type Values = z.infer<typeof schema>
 
 export function LoginPage() {
-  const { login } = useAuth()
+  const { login, loginWithGoogle } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [showPassword, setShowPassword] = useState(false)
@@ -47,6 +49,21 @@ export function LoginPage() {
         setFormError(errorMessage(error))
       }
       form.setValue('password', '')
+    }
+  }
+
+  async function onGoogle(idToken: string) {
+    setFormError(null)
+    try {
+      await loginWithGoogle(idToken)
+      const from = (location.state as { from?: string } | null)?.from
+      navigate(from && from !== '/login' ? from : '/', { replace: true })
+    } catch (error) {
+      if (error instanceof ApiError && error.isValidation) {
+        setFormError(error.field('id_token') ?? error.message)
+      } else {
+        setFormError(errorMessage(error))
+      }
     }
   }
 
@@ -110,6 +127,13 @@ export function LoginPage() {
               {isSubmitting && <Loader2Icon className="animate-spin" />}
               Sign in
             </Button>
+
+            {googleAvailable() && (
+              <>
+                <OrDivider />
+                <GoogleButton disabled={isSubmitting} onIdToken={onGoogle} onError={setFormError} />
+              </>
+            )}
           </form>
         </CardContent>
       </Card>

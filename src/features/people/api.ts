@@ -7,6 +7,7 @@ import type {
   PromotionPreview,
   PromotionResult,
   RoleSlug,
+  StaffImportResult,
   StaffMember,
   Student,
   StudentResult,
@@ -59,9 +60,16 @@ export function useStaffMutations() {
       mutationFn: (id: number) => api.post<{ temporary_password: string; username: string }>(`/staff/${id}/reset-password`),
       onSuccess: refresh,
     }),
+    signOutEverywhere: useMutation({ mutationFn: (id: number) => api.post(`/staff/${id}/sign-out`), onSuccess: refresh }),
     remove: useMutation({ mutationFn: (id: number) => api.delete(`/staff/${id}`), onSuccess: refresh }),
     sendInvitation: useMutation({ mutationFn: (id: number) => api.post<StaffMember>(`/staff/${id}/invitation`), onSuccess: refresh }),
     cancelInvitation: useMutation({ mutationFn: (id: number) => api.delete<StaffMember>(`/staff/${id}/invitation`), onSuccess: refresh }),
+    importRows: useMutation({
+      mutationFn: (input: { rows: Record<string, string>[]; dry_run: boolean; send_invitation: boolean }) =>
+        api.post<StaffImportResult>('/staff/import', input),
+      meta: silent,
+      onSuccess: (result) => result.committed && refresh(),
+    }),
   }
 }
 
@@ -146,7 +154,7 @@ export function useStudentResults(id: number) {
   })
 }
 
-export type StudentInput = Pick<Student, 'admission_no' | 'first_name' | 'last_name'> &
+export type StudentInput = Pick<Student, 'assessment_no' | 'first_name' | 'last_name'> &
   Partial<Pick<Student, 'middle_name' | 'upi' | 'gender' | 'date_of_birth' | 'guardian_name' | 'guardian_phone'>> & {
     class_id?: number
     academic_year_id?: number

@@ -26,7 +26,7 @@ export function ReportCardView({ card }: { card: ReportCard }) {
 
       <dl className="grid grid-cols-2 gap-x-4 gap-y-1 border-b border-neutral-300 py-3 sm:grid-cols-4">
         <Info label="Name" value={card.student.name} wide />
-        <Info label="Adm no" value={card.student.admission_no ?? '—'} />
+        <Info label="Assessment no" value={card.student.assessment_no ?? '—'} />
         <Info label="Class" value={card.class.name} />
         <Info label="Class teacher" value={card.class.class_teacher ?? '—'} />
       </dl>

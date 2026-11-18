@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router'
 import { useFieldArray, useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { ArrowDownIcon, ArrowUpIcon, LockIcon, PencilIcon, PlusIcon, Trash2Icon, XIcon } from 'lucide-react'
+import { ArrowDownIcon, ArrowUpIcon, ListPlusIcon, LockIcon, PencilIcon, PlusIcon, Trash2Icon, XIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/data/ConfirmDialog'
 import { Field } from '@/components/data/Field'
@@ -40,6 +40,8 @@ export function SubjectsPage() {
   const levelId = Number(params.get('level')) || firstTaught?.id || levels.data?.[0]?.id
   const level = levels.data?.find((l) => l.id === levelId)
   const [editing, setEditing] = useState<LevelSubject | 'new' | null>(null)
+  const [addingDefaults, setAddingDefaults] = useState(false)
+  const { applyDefaults } = useCurriculumMutations()
 
   return (
     <>
@@ -47,9 +49,14 @@ export function SubjectsPage() {
         title="Subjects"
         description="What each level teaches, how each subject's papers combine into one score, and its order on mark lists and report cards."
         actions={
-          <Button onClick={() => setEditing('new')} disabled={!level}>
-            <PlusIcon /> Add subject{level ? ` to ${level.name}` : ''}
-          </Button>
+          <>
+            <Button variant="outline" onClick={() => setAddingDefaults(true)}>
+              <ListPlusIcon /> Add default subjects
+            </Button>
+            <Button onClick={() => setEditing('new')} disabled={!level}>
+              <PlusIcon /> Add subject{level ? ` to ${level.name}` : ''}
+            </Button>
+          </>
         }
       />
 
@@ -73,7 +80,16 @@ export function SubjectsPage() {
               <EmptyState
                 title={`No subjects at ${level?.name ?? 'this level'} yet`}
                 description="Add the subjects this level teaches. Exams at this level examine every active subject unless you choose otherwise."
-                action={<Button onClick={() => setEditing('new')}>Add subject</Button>}
+                action={
+                  <div className="flex flex-wrap justify-center gap-2">
+                    <Button onClick={() => setAddingDefaults(true)}>
+                      <ListPlusIcon /> Add default subjects
+                    </Button>
+                    <Button variant="outline" onClick={() => setEditing('new')}>
+                      Add a subject
+                    </Button>
+                  </div>
+                }
               />
             ) : (
               <LevelSubjectList rows={rows} scales={scales.data ?? []} onEdit={setEditing} />
@@ -82,6 +98,34 @@ export function SubjectsPage() {
         </QueryState>
         <CatalogueCard subjects={subjects.data ?? []} />
       </div>
+
+      <ConfirmDialog
+        open={addingDefaults}
+        onOpenChange={setAddingDefaults}
+        title="Add the default subjects?"
+        description={
+          <span className="grid gap-2">
+            <span>Adds the standard CBC subjects for each level that this school does not offer yet:</span>
+            <span className="text-xs">
+              <strong>Lower primary</strong> — Mathematics, English (Reading + Grammar), Kiswahili (Kusoma + Lugha), Environmental Activities,
+              Creative Arts, CRE.
+              <br />
+              <strong>Upper primary</strong> — Mathematics, English, Kiswahili, Science and Technology, Social Studies, Agriculture and
+              Nutrition, Creative Arts, CRE.
+              <br />
+              <strong>Junior secondary</strong> — English and Kiswahili (Paper 1 + Paper 2), Mathematics, Creative Arts, Pre-Technical Studies,
+              Agriculture, Social Studies, Integrated Science, CRE.
+            </span>
+            <span>Subjects already set up are not changed. You can rename or edit any of them afterwards.</span>
+          </span>
+        }
+        confirmLabel="Add default subjects"
+        onConfirm={async () => {
+          const result = await applyDefaults.mutateAsync()
+          const added = result.data.level_subjects_added
+          toast.success(added === 0 ? 'Every default subject is already set up.' : `Added ${added} subject${added === 1 ? '' : 's'} across the levels.`)
+        }}
+      />
 
       {editing && level && (
         <LevelSubjectDialog
@@ -198,9 +242,6 @@ const levelSubjectSchema = z
     if (v.subject_mode === 'new' && !/^[A-Za-z0-9_-]+$/.test(v.new_code)) {
       ctx.addIssue({ code: 'custom', path: ['new_code'], message: 'A short code, e.g. ENG' })
     }
-    if (v.aggregation_rule === 'single' && v.papers.length !== 1) {
-      ctx.addIssue({ code: 'custom', path: ['aggregation_rule'], message: 'A single-paper subject has exactly one paper' })
-    }
     if (v.aggregation_rule !== 'single' && v.papers.length < 2) {
       ctx.addIssue({ code: 'custom', path: ['papers'], message: 'Combining papers needs at least two' })
     }
@@ -260,7 +301,6 @@ function LevelSubjectDialog({
   function setRule(next: AggregationRule) {
     form.setValue('aggregation_rule', next, { shouldValidate: form.formState.isSubmitted })
     // Keep the paper count consistent with the rule the admin picked.
-    if (next === 'single' && papers.fields.length > 1) papers.replace([form.getValues('papers.0')])
     if (next !== 'single' && papers.fields.length < 2) papers.append({ name: 'Paper 2', default_max_marks: '100', weight: '1' })
   }
 
@@ -325,8 +365,9 @@ function LevelSubjectDialog({
         <Alert>
           <LockIcon />
           <AlertDescription>
-            This subject has been examined, so its papers and how they combine are fixed. You can still rename papers, change their default
-            marks-out-of, grading, order and whether it is active.
+            This subject has been examined, so its existing papers and how they combine are fixed. You can still <strong>add</strong> a paper —
+            each exam chooses which papers it sets — and rename papers, change their default marks-out-of, grading, order and whether the
+            subject is active.
           </AlertDescription>
         </Alert>
       )}
@@ -406,7 +447,9 @@ function LevelSubjectDialog({
               variant="ghost"
               size="icon"
               aria-label={`Remove paper ${index + 1}`}
-              disabled={frozen || papers.fields.length <= 1}
+              // Examined subjects keep the papers they had; only papers added
+              // in this dialog can still be taken back out.
+              disabled={papers.fields.length <= 1 || (frozen && index < (levelSubject?.papers.length ?? 0))}
               onClick={() => papers.remove(index)}
             >
               <XIcon />
@@ -414,7 +457,7 @@ function LevelSubjectDialog({
           </div>
         ))}
         {errors.papers?.message && <p className="text-xs text-destructive">{errors.papers.message}</p>}
-        {!frozen && rule !== 'single' && papers.fields.length < 10 && (
+        {papers.fields.length < 10 && (
           <Button
             type="button"
             variant="outline"

@@ -10,12 +10,12 @@ const marklist: Marklist = {
   ],
   students: [
     {
-      student_id: 9, admission_no: 'A1', name: '=HYPERLINK("x")', total_marks: 78, mean_marks: 78, mean_band: 'EE-4', mean_band_label: 'EXCEEDING',
+      student_id: 9, assessment_no: 'A1', name: '=HYPERLINK("x")', total_marks: 78, mean_marks: 78, mean_band: 'EE-4', mean_band_label: 'EXCEEDING',
       grade_position: 1, stream_position: 1, grade_cohort_size: 2, stream_cohort_size: 2, is_complete: true, subjects_expected: 1, subjects_counted: 1,
       scores: [{ level_subject_id: 5, score: 78, raw_score: 78, max_marks: 100, band: 'EE-4', band_label: 'EXCEEDING', is_absent: false, subject_position: 1 }],
     },
     {
-      student_id: 10, admission_no: 'A2', name: 'Otieno, Jane', total_marks: null, mean_marks: null, mean_band: null, mean_band_label: null,
+      student_id: 10, assessment_no: 'A2', name: 'Otieno, Jane', total_marks: null, mean_marks: null, mean_band: null, mean_band_label: null,
       grade_position: null, stream_position: null, grade_cohort_size: 2, stream_cohort_size: 2, is_complete: false, subjects_expected: 1, subjects_counted: 0,
       scores: [{ level_subject_id: 5, score: null, raw_score: null, max_marks: 100, band: null, band_label: null, is_absent: true, subject_position: null }],
     },
@@ -25,7 +25,7 @@ const marklist: Marklist = {
 describe('marklistToCsv', () => {
   it('writes a header, one row per pupil and the class means', () => {
     const lines = marklistToCsv(marklist).split('\r\n')
-    expect(lines[0]).toBe('Position,Stream position,Admission no,Name,MAT,MAT level,Total,Mean,Mean level')
+    expect(lines[0]).toBe('Position,Stream position,Assessment no,Name,MAT,MAT level,Total,Mean,Mean level')
     expect(lines[2]).toBe(',,A2,"Otieno, Jane",ABS,,,,')
     expect(lines[3]).toBe(',,,Class mean,64.25,,,,')
   })

@@ -14,7 +14,7 @@ const sheet: Marksheet = {
     {
       enrolment_id: 21,
       student_id: 9,
-      admission_no: 'A1',
+      assessment_no: 'A1',
       name: 'Pupil One',
       marks: [
         { subject_paper_id: 11, raw_score: 32.5, is_absent: false, entered_at: '2026-01-01' },
@@ -26,7 +26,7 @@ const sheet: Marksheet = {
     {
       enrolment_id: 22,
       student_id: 10,
-      admission_no: 'A2',
+      assessment_no: 'A2',
       name: 'Pupil Two',
       marks: [
         { subject_paper_id: 11, raw_score: null, is_absent: true, entered_at: '2026-01-01' },

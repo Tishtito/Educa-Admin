@@ -67,6 +67,10 @@ function handleGlobally(error: ApiError): void {
     session.emit('unauthorized')
   } else if (error.status === 403 && (error.body as { password_change_required?: boolean })?.password_change_required) {
     session.emit('password-change-required')
+  } else if (error.status === 402 && (error.body as { subscription_required?: boolean })?.subscription_required) {
+    // The school's subscription lapsed while this page was open: reload who we
+    // are, so the locked pages show the renewal screen instead of errors.
+    session.emit('subscription-required')
   }
 }
 
@@ -98,6 +102,43 @@ export async function requestEnvelope<T>(
 export async function requestBlob(path: string, options: RequestOptions = {}): Promise<{ blob: Blob; filename: string | null }> {
   const response = await send('GET', path, options, 'blob')
   return { blob: await response.blob(), filename: filenameFrom(response.headers.get('Content-Disposition')) }
+}
+
+/**
+ * A multipart upload that reports progress (0..1). fetch cannot report upload
+ * progress, so this goes through XMLHttpRequest, with the same headers and the
+ * same error handling as every other request. Resolves with the whole envelope.
+ */
+export function uploadWithProgress<T, E extends object = object>(
+  path: string,
+  body: FormData,
+  { onProgress, signal }: { onProgress?: (fraction: number) => void; signal?: AbortSignal } = {},
+): Promise<{ data: T } & E> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('POST', buildUrl(path))
+    headers(true).forEach((value, key) => xhr.setRequestHeader(key, value))
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress?.(event.loaded / event.total)
+    }
+    xhr.onerror = () => reject(new ApiError(0, 'Cannot reach the server. Check your connection and try again.'))
+    xhr.onabort = () => reject(new DOMException('Upload cancelled', 'AbortError'))
+    xhr.onload = async () => {
+      const response = new Response(xhr.responseText || null, { status: xhr.status, headers: { 'Content-Type': 'application/json' } })
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress?.(1)
+        resolve((await response.json()) as { data: T } & E)
+        return
+      }
+      const error = await toApiError(response)
+      handleGlobally(error)
+      reject(error)
+    }
+
+    signal?.addEventListener('abort', () => xhr.abort(), { once: true })
+    xhr.send(body)
+  })
 }
 
 export function filenameFrom(disposition: string | null): string | null {

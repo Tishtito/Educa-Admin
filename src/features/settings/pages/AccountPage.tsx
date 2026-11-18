@@ -2,6 +2,7 @@ import { useAuth } from '@/auth/useAuth'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ChangePasswordForm } from '@/features/auth/ChangePasswordForm'
+import { SessionsCard } from '@/features/auth/SessionsCard'
 import { roleLabel } from '@/lib/format'
 
 export function AccountPage() {
@@ -18,7 +19,7 @@ export function AccountPage() {
   ]
 
   return (
-    <div className="grid max-w-4xl gap-6 lg:grid-cols-2">
+    <div className="grid max-w-4xl items-start gap-6 lg:grid-cols-2">
       <Card>
         <CardHeader>
           <CardTitle>Your details</CardTitle>
@@ -27,17 +28,17 @@ export function AccountPage() {
         <CardContent>
           <dl className="grid gap-3 text-sm">
             {details.map(([label, value]) => (
-              <div key={label} className="grid grid-cols-[8rem_1fr] gap-2">
+              <div key={label} className="grid grid-cols-1 gap-0.5 sm:grid-cols-[8rem_1fr] sm:gap-2">
                 <dt className="text-muted-foreground">{label}</dt>
-                <dd className="min-w-0 truncate">{value || '—'}</dd>
+                <dd className="min-w-0 break-words">{value || '—'}</dd>
               </div>
             ))}
-            <div className="grid grid-cols-[8rem_1fr] gap-2">
+            <div className="grid grid-cols-1 gap-0.5 sm:grid-cols-[8rem_1fr] sm:gap-2">
               <dt className="text-muted-foreground">Roles</dt>
               <dd className="flex flex-wrap gap-1">
-                {user.roles.map((role) => (
+                {user.roles.map((role, i) => (
                   <Badge key={role} variant="secondary">
-                    {roleLabel(role)}
+                    {user.role_names?.[i] ?? roleLabel(role)}
                   </Badge>
                 ))}
               </dd>
@@ -54,6 +55,9 @@ export function AccountPage() {
           <ChangePasswordForm />
         </CardContent>
       </Card>
+      <div className="lg:col-span-2">
+        <SessionsCard />
+      </div>
     </div>
   )
 }

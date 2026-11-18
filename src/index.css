@@ -128,6 +128,31 @@
     @apply font-sans;
     }
 }
+
+/* Phones and tablets: a control you tap should be at least 44px, whatever the size
+   variant says. Mouse and trackpad keep the compact desktop density. */
+@media (pointer: coarse) {
+  [data-slot="button"]:not([data-size="xs"]):not([data-size="icon-xs"]),
+  [data-slot="input"],
+  [data-slot="tab-link"] {
+    min-height: 2.75rem;
+  }
+  [data-slot="tab-link"] {
+    display: flex;
+    align-items: center;
+  }
+  [data-slot="button"][data-size="icon"],
+  [data-slot="button"][data-size="icon-sm"],
+  [data-slot="button"][data-size="icon-lg"] {
+    min-width: 2.75rem;
+  }
+  /* Dense grids (the marksheet) set their own sizing. */
+  .touch-dense [data-slot="button"],
+  .touch-dense [data-slot="input"] {
+    min-height: 0;
+  }
+}
+
 /* Printing (mark lists, report card previews): no app chrome, black on white. */
 @media print {
   body {
@@ -135,11 +160,26 @@
   }
 }
 
-@keyframes educa-progress {
+@keyframes elimupass-progress {
   from {
     transform: translateX(-100%);
   }
   to {
     transform: translateX(300%);
+  }
+}
+
+/* Bottom nav: the active icon popping into its circle. */
+@keyframes elimupass-pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
   }
 }

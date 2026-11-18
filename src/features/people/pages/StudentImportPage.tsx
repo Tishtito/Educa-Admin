@@ -15,10 +15,22 @@ import { errorMessage } from '@/lib/api/errors'
 import type { ImportResult } from '@/lib/api/types'
 import { useStudentMutations } from '../api'
 
-const TEMPLATE = 'Admission No,First Name,Middle Name,Last Name,Gender,Date of Birth,Class,Guardian Name,Guardian Phone,UPI\r\nGAT-101,Achieng,Atieno,Odhiambo,Female,21/03/2016,Grade 4 Blue,Mary Odhiambo,0712000111,\r\n'
+// The three columns a row cannot do without. Everything else is optional and
+// listed on the page (OPTIONAL_COLUMNS), so the template stays easy to fill in.
+const TEMPLATE = 'Assessment No,Name,Class\r\nGAT-101,Achieng Atieno Odhiambo,Grade 4 Blue\r\n'
+
+const OPTIONAL_COLUMNS: [string, string][] = [
+  ['First Name, Middle Name, Last Name', 'instead of one “Name” column'],
+  ['Gender', 'male, female or blank'],
+  ['Date of Birth', '2016-03-21 or 21/03/2016'],
+  ['Guardian Name, Guardian Phone', 'also read as “Parent”, “Phone”'],
+  ['UPI', 'the NEMIS number'],
+  ['Status', 'active, transferred, graduated or inactive — blank means active'],
+  ['Joined', 'the day they joined this class; blank means today'],
+]
 
 const fieldLabels: Record<string, string> = {
-  admission_no: 'Admission no.',
+  assessment_no: 'Assessment no.',
   name: 'Name',
   first_name: 'First name',
   middle_name: 'Middle name',
@@ -29,6 +41,8 @@ const fieldLabels: Record<string, string> = {
   guardian_name: 'Guardian',
   guardian_phone: 'Guardian phone',
   upi: 'UPI',
+  status: 'Status',
+  started_on: 'Joined',
 }
 
 export function StudentImportPage() {
@@ -92,8 +106,8 @@ export function StudentImportPage() {
           <CardHeader>
             <CardTitle className="text-base">1. Choose a file</CardTitle>
             <CardDescription>
-              Needs an admission number, the pupil’s name (one “Name” column or first and last name) and their class, spelled as on the Classes
-              page. Gender, date of birth and guardian details are optional.
+              Needs an assessment number, the pupil’s name (one “Name” column or first and last name) and their class, spelled as on the Classes
+              page. Every other column is optional, and a blank cell simply means “not given”.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-3">
@@ -111,10 +125,18 @@ export function StudentImportPage() {
             <Button onClick={() => input.current?.click()} disabled={importRows.isPending || !year.current}>
               <UploadIcon /> Choose CSV file
             </Button>
-            <Button variant="outline" onClick={() => void saveBlob(new Blob([TEMPLATE], { type: 'text/csv' }), 'educa-pupils-template.csv')}>
+            <Button variant="outline" onClick={() => void saveBlob(new Blob([TEMPLATE], { type: 'text/csv' }), 'elimupass-pupils-template.csv')}>
               <DownloadIcon /> Download a template
             </Button>
             <p className="text-xs text-muted-foreground">In Excel or Google Sheets use File → Save as / Download → CSV.</p>
+            <div className="grid gap-1 border-t pt-3 text-xs text-muted-foreground">
+              <div className="font-medium text-foreground">Columns you can add</div>
+              {OPTIONAL_COLUMNS.map(([column, hint]) => (
+                <div key={column}>
+                  <span className="text-foreground">{column}</span> — {hint}
+                </div>
+              ))}
+            </div>
             {!year.current && year.data && <p className="text-sm text-destructive">Set a current academic year first.</p>}
           </CardContent>
         </Card>
@@ -191,23 +213,27 @@ export function StudentImportPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Adm. no.</TableHead>
+                      <TableHead>Assessment no.</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Class</TableHead>
                       <TableHead>Gender</TableHead>
                       <TableHead>Born</TableHead>
                       <TableHead>Guardian</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Joined</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {check.preview.map((row, i) => (
                       <TableRow key={i}>
-                        <TableCell>{row.admission_no}</TableCell>
+                        <TableCell>{row.assessment_no}</TableCell>
                         <TableCell>{[row.first_name, row.middle_name, row.last_name].filter(Boolean).join(' ')}</TableCell>
                         <TableCell>{row.class_name}</TableCell>
                         <TableCell>{row.gender ?? '—'}</TableCell>
                         <TableCell>{row.date_of_birth ?? '—'}</TableCell>
                         <TableCell>{row.guardian_name ?? '—'}</TableCell>
+                        <TableCell>{row.status ?? 'active'}</TableCell>
+                        <TableCell>{row.started_on ?? 'today'}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

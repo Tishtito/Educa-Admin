@@ -143,7 +143,7 @@ export function EntriesEditor({
                 <tr key={student.enrolment_id} className={cn('border-b align-top last:border-0', isChanged && 'bg-primary/5')}>
                   <td className="px-3 py-2">
                     <div className="font-medium">{student.name}</div>
-                    <div className="text-xs text-muted-foreground">{student.admission_no}</div>
+                    <div className="text-xs text-muted-foreground">{student.assessment_no}</div>
                     {error && <div className="mt-1 text-xs text-destructive">{error}</div>}
                   </td>
                   <td className="px-3 py-2">

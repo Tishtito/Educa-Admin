@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
 import { ClipboardListIcon, PlusIcon } from 'lucide-react'
+import { useAuth } from '@/auth/useAuth'
 import { PageHeader } from '@/components/data/PageHeader'
 import { EmptyState, ErrorPanel } from '@/components/data/QueryState'
 import { Button } from '@/components/ui/button'
@@ -23,6 +24,7 @@ export function ExamsListPage() {
   const years = useAcademicYears()
   const [filters, setFilters] = useState<ExamFilters>({ page: 1, per_page: 25 })
   const exams = useExams(filters)
+  const { can } = useAuth()
   const selectedYear = years.data?.find((year) => year.id === filters.academic_year_id)
 
   const update = (patch: Partial<ExamFilters>) => setFilters((current) => ({ ...current, page: 1, ...patch }))
@@ -33,11 +35,13 @@ export function ExamsListPage() {
         title="Exams"
         description="Every exam in your school, from set-up to published report cards."
         actions={
-          <Button asChild>
-            <Link to="/exams/new">
-              <PlusIcon /> New exam
-            </Link>
-          </Button>
+          can('create_exams') && (
+            <Button asChild>
+              <Link to="/exams/new">
+                <PlusIcon /> New exam
+              </Link>
+            </Button>
+          )
         }
       />
 

@@ -10,7 +10,7 @@ export function AuthLayout({ children, footer }: { children: ReactNode; footer?:
           <div className="flex size-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
             <GraduationCapIcon className="size-6" />
           </div>
-          <h1 className="text-2xl font-semibold tracking-tight">Educa Admin</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Elimu Pass Admin</h1>
         </div>
         {children}
         {footer && <div className="mt-4 text-center text-xs text-muted-foreground">{footer}</div>}

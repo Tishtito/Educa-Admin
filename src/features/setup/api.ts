@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/lib/api/client'
+import { api, requestEnvelope } from '@/lib/api/client'
 import type {
   AcademicYear,
   AggregationRule,
@@ -151,6 +151,11 @@ export function useCurriculumMutations() {
   }
 
   return {
+    /** Adds the standard CBC subjects each level does not offer yet. Never changes existing ones. */
+    applyDefaults: useMutation({
+      mutationFn: () => requestEnvelope<{ subjects_added: number; level_subjects_added: number }>('POST', '/level-subjects/defaults'),
+      onSuccess: refresh,
+    }),
     createSubject: useMutation({
       mutationFn: (input: { code: string; name: string; short_name?: string | null }) => api.post<Subject>('/subjects', input),
       meta: silent,
@@ -229,6 +234,12 @@ export function useExamSetup(examId: number) {
   })
 }
 
+/** A subject this exam examines, and which of its papers it sets. */
+export interface ExamSubjectChoice {
+  level_subject_id: number
+  papers: { subject_paper_id: number; max_marks?: number | null }[]
+}
+
 export function useExamSetupMutations(examId: number) {
   const queryClient = useQueryClient()
   const refresh = () => {
@@ -244,7 +255,7 @@ export function useExamSetupMutations(examId: number) {
       onSuccess: refresh,
     }),
     chooseSubjects: useMutation({
-      mutationFn: (levelSubjectIds: number[]) => api.put<ExamSetup>(`/exams/${examId}/subjects`, { level_subject_ids: levelSubjectIds }),
+      mutationFn: (subjects: ExamSubjectChoice[]) => api.put<ExamSetup>(`/exams/${examId}/subjects`, { subjects }),
       meta: silent,
       onSuccess: (data) => {
         queryClient.setQueryData(setupKeys.examSetup(examId), data)

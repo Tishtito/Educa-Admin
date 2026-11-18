@@ -87,7 +87,7 @@ export function StudentsPage() {
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="relative w-full max-w-xs">
           <SearchIcon className="absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className="pl-8" placeholder="Name or admission no." value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input className="pl-8" placeholder="Name or assessment no." value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         <Select value={params.get('year') ?? ALL} onValueChange={(v) => update({ year: v })}>
           <SelectTrigger className="w-36" aria-label="Year">
@@ -153,7 +153,7 @@ export function StudentsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Pupil</TableHead>
-                  <TableHead>Adm. no.</TableHead>
+                  <TableHead>Assessment no.</TableHead>
                   <TableHead>Class{yearName ? ` (${yearName})` : ''}</TableHead>
                   <TableHead>Guardian</TableHead>
                   <TableHead>Status</TableHead>
@@ -167,7 +167,7 @@ export function StudentsPage() {
                         {student.full_name}
                       </Link>
                     </TableCell>
-                    <TableCell className="tabular-nums">{student.admission_no}</TableCell>
+                    <TableCell className="tabular-nums">{student.assessment_no}</TableCell>
                     <TableCell>{student.enrolment?.class_name ?? <span className="text-muted-foreground">—</span>}</TableCell>
                     <TableCell className="text-sm">
                       {student.guardian_name ?? '—'}

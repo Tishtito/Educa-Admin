@@ -52,12 +52,12 @@ function detectDelimiter(text: string): ',' | ';' | '\t' {
 
 /** Column headings people actually use, mapped to the import's field names. */
 const headerAliases: Record<string, string> = {
-  admission_no: 'admission_no',
-  admission_number: 'admission_no',
-  admission: 'admission_no',
-  adm_no: 'admission_no',
-  adm: 'admission_no',
-  reg_no: 'admission_no',
+  // CBC's word for the pupil's school identifier. Files headed "Admission No"
+  // are refused, with a message naming the column to use.
+  assessment_no: 'assessment_no',
+  assessment_number: 'assessment_no',
+  assessment: 'assessment_no',
+  assmt_no: 'assessment_no',
   name: 'name',
   full_name: 'name',
   pupil_name: 'name',
@@ -88,23 +88,69 @@ const headerAliases: Record<string, string> = {
   phone_number: 'guardian_phone',
   upi: 'upi',
   nemis_upi: 'upi',
+  status: 'status',
+  // The day the pupil joined this class, not their identifier.
+  started_on: 'started_on',
+  joined: 'started_on',
+  date_joined: 'started_on',
+  joining_date: 'started_on',
+  start_date: 'started_on',
+  admission_date: 'started_on',
 }
 
-export const importFields = ['admission_no', 'name', 'first_name', 'middle_name', 'last_name', 'gender', 'date_of_birth', 'class', 'guardian_name', 'guardian_phone', 'upi'] as const
+export const importFields = ['assessment_no', 'name', 'first_name', 'middle_name', 'last_name', 'gender', 'date_of_birth', 'class', 'guardian_name', 'guardian_phone', 'upi', 'status', 'started_on'] as const
 
-export function normaliseHeader(header: string): string | null {
+/** Column headings for the staff import (POST /staff/import). */
+export const staffHeaderAliases: Record<string, string> = {
+  name: 'name',
+  full_name: 'name',
+  names: 'name',
+  staff_name: 'name',
+  teacher_name: 'name',
+  first_name: 'first_name',
+  firstname: 'first_name',
+  middle_name: 'middle_name',
+  other_names: 'middle_name',
+  last_name: 'last_name',
+  lastname: 'last_name',
+  surname: 'last_name',
+  username: 'username',
+  user_name: 'username',
+  login: 'username',
+  email: 'email',
+  email_address: 'email',
+  e_mail: 'email',
+  phone: 'phone',
+  phone_number: 'phone',
+  phone_no: 'phone',
+  mobile: 'phone',
+  telephone: 'phone',
+  staff_no: 'staff_no',
+  staff_number: 'staff_no',
+  employee_no: 'staff_no',
+  tsc_no: 'tsc_no',
+  tsc: 'tsc_no',
+  tsc_number: 'tsc_no',
+  role: 'role',
+  roles: 'role',
+}
+
+export function normaliseHeader(header: string, aliases: Record<string, string> = headerAliases): string | null {
   const key = header
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '_')
     .replace(/^_|_$/g, '')
-  return headerAliases[key] ?? null
+  return aliases[key] ?? null
 }
 
-/** Rows as objects keyed by import field; unknown columns are dropped. */
-export function rowsToRecords(rows: string[][]): { records: Record<string, string>[]; mapped: Record<string, string | null> } {
+/** Rows as objects keyed by import field; unknown columns are dropped. Pupil headings unless other aliases are given. */
+export function rowsToRecords(
+  rows: string[][],
+  aliases: Record<string, string> = headerAliases,
+): { records: Record<string, string>[]; mapped: Record<string, string | null> } {
   const [header = [], ...body] = rows
-  const fields = header.map(normaliseHeader)
+  const fields = header.map((h) => normaliseHeader(h, aliases))
   const mapped = Object.fromEntries(header.map((h, i) => [h, fields[i]]))
   const records = body.map((cells) => {
     const record: Record<string, string> = {}

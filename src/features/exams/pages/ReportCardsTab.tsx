@@ -158,7 +158,7 @@ function CardsPreview({ examId, classId, layout, examName }: { examId: number; c
                     >
                       <div className="truncate">{card.student.name}</div>
                       <div className="text-xs text-muted-foreground">
-                        {card.student.admission_no} · mean {card.totals.at(-1)?.mean_marks ?? '—'}
+                        {card.student.assessment_no} · mean {card.totals.at(-1)?.mean_marks ?? '—'}
                       </div>
                     </button>
                   </li>

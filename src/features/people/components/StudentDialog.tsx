@@ -14,7 +14,7 @@ import { useStudentMutations } from '../api'
 const NONE = 'none'
 
 const schema = z.object({
-  admission_no: z.string().trim().min(1, 'Enter the admission number').max(40),
+  assessment_no: z.string().trim().min(1, 'Enter the assessment number').max(40),
   first_name: z.string().trim().min(1, 'Enter the first name').max(80),
   middle_name: z.string().trim().max(80),
   last_name: z.string().trim().min(1, 'Enter the last name').max(80),
@@ -49,7 +49,7 @@ export function StudentDialog({
       student ? schema : schema.refine((v) => v.class_id !== NONE && v.class_id !== '', { path: ['class_id'], message: 'Choose a class' }),
     ),
     defaultValues: {
-      admission_no: student?.admission_no ?? '',
+      assessment_no: student?.assessment_no ?? '',
       first_name: student?.first_name ?? '',
       middle_name: student?.middle_name ?? '',
       last_name: student?.last_name ?? '',
@@ -66,7 +66,7 @@ export function StudentDialog({
 
   async function submit(values: Values) {
     const details = {
-      admission_no: values.admission_no,
+      assessment_no: values.assessment_no,
       first_name: values.first_name,
       middle_name: values.middle_name || null,
       last_name: values.last_name,
@@ -84,7 +84,7 @@ export function StudentDialog({
       onSaved?.(saved)
       onOpenChange(false)
     } catch (error) {
-      showFormError(form, error, ['admission_no', 'first_name', 'middle_name', 'last_name', 'gender', 'date_of_birth', 'guardian_name', 'guardian_phone', 'upi', 'class_id'])
+      showFormError(form, error, ['assessment_no', 'first_name', 'middle_name', 'last_name', 'gender', 'date_of_birth', 'guardian_name', 'guardian_phone', 'upi', 'class_id'])
     }
   }
 
@@ -99,8 +99,8 @@ export function StudentDialog({
       wide
     >
       <div className="grid gap-4 sm:grid-cols-3">
-        <Field label="Admission no." htmlFor="st-adm" error={errors.admission_no?.message}>
-          <Input id="st-adm" {...form.register('admission_no')} />
+        <Field label="Assessment no." htmlFor="st-assessment" error={errors.assessment_no?.message}>
+          <Input id="st-assessment" {...form.register('assessment_no')} />
         </Field>
         <Field label="UPI (NEMIS)" htmlFor="st-upi" error={errors.upi?.message}>
           <Input id="st-upi" {...form.register('upi')} />
